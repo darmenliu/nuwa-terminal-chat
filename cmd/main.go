@@ -47,10 +47,10 @@ func executor(in string) {
 
 func completer(in goterm.Document) []goterm.Suggest {
 	s := []goterm.Suggest{
-		{Text: "users", Description: "Store the username and age"},
-		{Text: "articles", Description: "Store the article text posted by user"},
-		{Text: "comments", Description: "Store the text commented to articles"},
-		{Text: "groups", Description: "Combine users with specific rules"},
+		{Text: "chatmode", Description: "Set terminal as a pure chat robot mode"},
+		{Text: "cmdmode", Description: "Set terminal as a command mode, use natural language to communicate"},
+		{Text: "taskmode", Description: "Set terminal as a task mode, use natural language to communicate to execute tasks"},
+		{Text: "exit", Description: "Exit the terminal"},
 	}
 	return goterm.FilterHasPrefix(s, in.GetWordBeforeCursor(), true)
 }
