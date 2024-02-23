@@ -12,17 +12,47 @@ import (
 	"github.com/pterm/pterm/putils"
 )
 
+const (
+	ChatMode = "chatmode"
+	CmdMode  = "cmdmode"
+	TaskMode = "taskmode"
+	Exit = "exit"
+)
+
+var CurrentMode string = ChatMode
+
+func SetCurrentMode(in string) {
+	CurrentMode = in
+}
+
+func GetSysPromptAccordingMode(current string) string {
+	switch current {
+	case ChatMode:
+		return ""
+	case CmdMode:
+		return ""
+	case TaskMode:
+		return ""
+	default:
+		return ""
+	}
+}
+
+func GetPromptAccordingToCurrentMode(current string, in string) string {
+	sysPrompt := GetSysPromptAccordingMode(current)
+	return sysPrompt + in
+}
+
 func GenerateContent(ctx context.Context, prompt string) (string, error) {
-	ctx = context.Background()
 	model, err := gemini.NewGemini(ctx)
 	if err != nil {
-		return "", fmt.Errorf("Failed to create model: %w", err)
+		return "", fmt.Errorf("failed to create model: %w", err)
 	}
 	defer model.CloseBackend()
 
 	resp, err := model.GenerateContent(ctx, prompt)
 	if err != nil {
-		return "", fmt.Errorf("Failed to generate content: %w", err)
+		return "", fmt.Errorf("failed to generate content: %w", err)
 	}
 	return resp, nil
 }
@@ -32,14 +62,29 @@ func FailureExit() {
 }
 
 func executor(in string) {
+	logger := pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
 	fmt.Println("You: " + in)
 	if in == "" {
 		return
 	}
+
+	if in == Exit {
+		logger.Info("NUWA TERMINAL: Goodbye!")
+		os.Exit(0)
+	}
+
+	if (in == ChatMode) || (in == CmdMode) || (in == TaskMode) {
+		SetCurrentMode(in)
+		logger.Info("NUWA TERMINAL: Mode is " + CurrentMode)
+		return
+	}
+
+	prompt := GetPromptAccordingToCurrentMode(CurrentMode, in)
+
 	ctx := context.Background()
-	rsp, err := GenerateContent(ctx, in)
+	rsp, err := GenerateContent(ctx, prompt)
 	if err != nil {
-		fmt.Println("NUWA: " + err.Error())
+		logger.Error("NUWA TERMINAL: failed to generate content,", logger.Args("err", err.Error()))
 		return
 	}
 	fmt.Println("NUWA: " + rsp)
