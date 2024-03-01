@@ -58,6 +58,15 @@ Python toolbelt preferences:
 
 	RoadmapPrompt string = `You will get instructions for code to write.
 You will write a very long answer. Make sure that every detail of the architecture is, in the end, implemented as code.`
+
+	SysPromptForChatMode string = `You are a expert about software development, and you are a chatbot face for software engineers.
+Always thinking step by step to about users questions, make sure your answer is correct and helpful.
+if user ask you to generate some code, you will get instructions for code to write.
+
+FILE_FORMAT
+
+Below is the prompt from users:
+`
 )
 
 func GetCodeGeneratorPrompt(fileFormat string) string {
@@ -70,4 +79,8 @@ func GetSysPrompt() string {
 
 func GetUserPrompt(userPrompt string) string {
 	return GetSysPrompt() + "\n\n" + userPrompt
+}
+
+func GetChatModePrompt() string {
+	return strings.Replace(SysPromptForChatMode, "FILE_FORMAT", FileFormatPrompt, 1)
 }

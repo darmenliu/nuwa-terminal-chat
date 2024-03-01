@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"nuwa-engineer/pkg/llms/gemini"
+	"nuwa-engineer/pkg/prompts"
 
 	goterm "github.com/c-bata/go-prompt"
 	"github.com/pterm/pterm"
@@ -28,7 +29,7 @@ func SetCurrentMode(in string) {
 func GetSysPromptAccordingMode(current string) string {
 	switch current {
 	case ChatMode:
-		return ""
+		return prompts.GetChatModePrompt()
 	case CmdMode:
 		return ""
 	case TaskMode:
