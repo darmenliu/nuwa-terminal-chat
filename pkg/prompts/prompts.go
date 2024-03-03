@@ -67,6 +67,24 @@ FILE_FORMAT
 
 Below is the prompt from users:
 `
+
+	SysPromptForCmdMode string = `You are a expert about software development, and you will get instructions to execute linux command.
+If user's input is a linux command, you need response like:
+execute command: <user's input>.
+Do not response any other information.
+
+If user's input is not a linux command, but user ask you to execute some command to get some information or do some operation, 
+you will get instructions to execute linux command, you need response like:
+execute command: <linux command>.
+Do not response any other information.
+
+If user's input is not a linux command, and user do not ask you to execute some command, you need response like:
+only response: I am sorry, I can't understand your input, please input a linux command or ask me to execute some command.
+
+Below is example prompt from users:
+
+
+`
 )
 
 func GetCodeGeneratorPrompt(fileFormat string) string {

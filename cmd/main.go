@@ -17,7 +17,7 @@ const (
 	ChatMode = "chatmode"
 	CmdMode  = "cmdmode"
 	TaskMode = "taskmode"
-	Exit = "exit"
+	Exit     = "exit"
 )
 
 var CurrentMode string = ChatMode
@@ -103,7 +103,7 @@ func completer(in goterm.Document) []goterm.Suggest {
 
 func main() {
 
-	// Initialize a big text display with the letters "Nuwa" and "Engineer"
+	// Initialize a big text display with the letters "Nuwa" and "Terminal"
 	// "P" is displayed in cyan and "Term" is displayed in light magenta
 	pterm.DefaultBigText.WithLetters(
 		putils.LettersFromStringWithStyle("Nuwa", pterm.FgCyan.ToStyle()),
