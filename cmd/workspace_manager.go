@@ -48,7 +48,7 @@ func (d *DefaultWorkSpaceManager) CreateWorkspace() error {
 	dirCreator := dir.NewDefaultDirectoryCreator()
 	err := dirCreator.CreateDir(workspacePath)
 	if err != nil {
-		logger.Error("failed to create workspace", err.Error())
+		logger.Error("failed to create workspace", "err=", err.Error())
 		return fmt.Errorf("failed to create workspace: %w", err)
 	}
 
@@ -69,7 +69,7 @@ func (d *DefaultWorkSpaceManager) CreateGolangProject(projectName string) error 
 	dirCreator := dir.NewDefaultDirectoryCreator()
 	err := dirCreator.CreateDir(projectPath)
 	if err != nil {
-		logger.Error("failed to create project", err.Error())
+		logger.Error("failed to create project", "err=", err.Error())
 		return fmt.Errorf("failed to create project: %w", err)
 	}
 	logger.Info("project created", "path", projectPath)

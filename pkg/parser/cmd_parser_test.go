@@ -3,7 +3,7 @@ package parser
 import (
 	"testing"
 
-	testify "github.com/stretchr/testify"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestParseCmdFromString(t *testing.T) {
@@ -12,8 +12,8 @@ func TestParseCmdFromString(t *testing.T) {
 
 	actual, err := ParseCmdFromString(input)
 
-	testify.NoError(t, err)
-	testify.Equal(t, expected, actual)
+	assert.NoError(t, err)
+	assert.Equal(t, expected, actual)
 }
 
 func TestParseCmdFromStringNoMatch(t *testing.T) {
@@ -22,8 +22,8 @@ func TestParseCmdFromStringNoMatch(t *testing.T) {
 
 	actual, err := ParseCmdFromString(input)
 
-	testify.NoError(t, err)
-	testify.Equal(t, expected, actual)
+	assert.EqualError(t, err, "no match found")
+	assert.Equal(t, expected, actual)
 }
 
 func TestParseCmdFromStringEmptyInput(t *testing.T) {
@@ -32,6 +32,6 @@ func TestParseCmdFromStringEmptyInput(t *testing.T) {
 
 	actual, err := ParseCmdFromString(input)
 
-	testify.NoError(t, err)
-	testify.Equal(t, expected, actual)
+	assert.EqualError(t, err, "no match found")
+	assert.Equal(t, expected, actual)
 }

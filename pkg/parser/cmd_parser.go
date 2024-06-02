@@ -15,7 +15,7 @@ func ParseCmdFromString(input string) (string, error) {
 	re := regexp.MustCompile(`execute command: (.*)`)
 	match := re.FindStringSubmatch(input)
 	if match != nil {
-		logger.Info("Matched:", match[1])
+		logger.Info("Matched:", "match content", match[1])
 		return match[1], nil
 	} else {
 		logger.Info("No match found.")

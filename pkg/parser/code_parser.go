@@ -21,7 +21,7 @@ func (s *SourceFile) ParseFileName() {
 
 	if match != nil {
 		s.FileName = match[1]
-		logger.Info("Matched:", match[1])
+		logger.Info("Matched:", "match_content ", match[1])
 	} else {
 		logger.Info("No match found.")
 	}
@@ -36,7 +36,7 @@ func (s *SourceFile) ParseFileContent() {
 
 	if match != nil {
 		s.FileContent = match[1]
-		logger.Info("Matched:", match[1])
+		logger.Info("Matched:", "match_content ", match[1])
 	} else {
 		logger.Info("No match found.")
 	}
