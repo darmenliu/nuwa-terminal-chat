@@ -94,6 +94,8 @@ your response: I am sorry, I can't understand your input, please input a linux c
 
 user: docker run hello-world
 your response: execute command: docker run hello-world
+
+Below is the promt from users:
 `
 )
 
@@ -111,4 +113,8 @@ func GetUserPrompt(userPrompt string) string {
 
 func GetChatModePrompt() string {
 	return strings.Replace(SysPromptForChatMode, "FILE_FORMAT", FileFormatPrompt, 1)
+}
+
+func GetCmdModePrompt() string {
+	return SysPromptForCmdMode
 }

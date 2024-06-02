@@ -31,7 +31,7 @@ func GetSysPromptAccordingMode(current string) string {
 	case ChatMode:
 		return prompts.GetChatModePrompt()
 	case CmdMode:
-		return ""
+		return prompts.GetCmdModePrompt()
 	case TaskMode:
 		return ""
 	default:
@@ -41,7 +41,7 @@ func GetSysPromptAccordingMode(current string) string {
 
 func GetPromptAccordingToCurrentMode(current string, in string) string {
 	sysPrompt := GetSysPromptAccordingMode(current)
-	return sysPrompt + in
+	return sysPrompt + "\n" + in
 }
 
 func GenerateContent(ctx context.Context, prompt string) (string, error) {
@@ -81,6 +81,8 @@ func executor(in string) {
 	}
 
 	prompt := GetPromptAccordingToCurrentMode(CurrentMode, in)
+
+	logger.Info("NUWA TERMINAL: " + prompt)
 
 	ctx := context.Background()
 	rsp, err := GenerateContent(ctx, prompt)
