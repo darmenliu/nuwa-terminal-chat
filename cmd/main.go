@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"os"
 
+	"nuwa-engineer/pkg/cmdexe"
 	"nuwa-engineer/pkg/llms/gemini"
+	"nuwa-engineer/pkg/parser"
 	"nuwa-engineer/pkg/prompts"
 
 	goterm "github.com/c-bata/go-prompt"
@@ -91,6 +93,27 @@ func executor(in string) {
 		return
 	}
 	fmt.Println("NUWA: " + rsp)
+
+	if CurrentMode == CmdMode {
+		cmd, err := parser.ParseCmdFromString(rsp)
+		if err != nil {
+			logger.Error("NUWA TERMINAL: failed to parse command,", logger.Args("err", err.Error()))
+			return
+		}
+
+		if cmd == "" {
+			logger.Info("NUWA TERMINAL: empty command")
+			return
+		}
+
+		output, err := cmdexe.ExecCommandWithOutput(cmd)
+		if err != nil {
+			logger.Error("NUWA TERMINAL: failed to execute command,", logger.Args("err", err.Error(), "output", output))
+			return
+		}
+		fmt.Println(output)
+	}
+
 }
 
 func completer(in goterm.Document) []goterm.Suggest {
