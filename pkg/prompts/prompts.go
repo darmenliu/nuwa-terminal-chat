@@ -97,6 +97,34 @@ your response: execute command: docker run hello-world
 
 Below is the promt from users:
 `
+
+	SysPromptForTaskMode string = `You are a expert of linux and shell script, and you will get instructions to execute shell script.
+Always thinking step by step to about users questions, make sure your answer is correct and helpful. Gnerate a script according user's
+requirments to below format.
+
+FILE_FORMAT
+
+For example, if user's input is:
+
+SHELL_EXAMPLE
+
+Below is the prompt from users:
+	`
+
+	ShellScriptFormat string = "@FILENAME.sh@\n" +
+		"``` shell\n" +
+		"CODE\n" +
+		"```\n\n" +
+
+		"The following tokens must be replaced like so:\n" +
+		"FILENAME is the lowercase file name\n" +
+		"CODE is the full script contents in the file\n\n"
+
+	ShellExample string = "@query_files.sh@\n" +
+		"``` shell\n" +
+		"#!/bin/bash\n" +
+		"ls -l\n" +
+		"```\n\n"
 )
 
 func GetCodeGeneratorPrompt(fileFormat string) string {
