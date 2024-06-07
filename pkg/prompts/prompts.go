@@ -98,13 +98,14 @@ your response: execute command: docker run hello-world
 Below is the promt from users:
 `
 
-	SysPromptForTaskMode string = `You are a expert of linux and shell script, and you will get instructions to execute shell script.
+	SysPromptForTaskMode string = `You are a expert of linux and shell script, and you will get instructions to generate shell script.
 Always thinking step by step to about users questions, make sure your answer is correct and helpful. Gnerate a script according user's
-requirments to below format.
+requirments with below format.
 
 FILE_FORMAT
 
-For example, if user's input is:
+For example, if user's input is: query files
+you need response like:
 
 SHELL_EXAMPLE
 
@@ -145,4 +146,10 @@ func GetChatModePrompt() string {
 
 func GetCmdModePrompt() string {
 	return SysPromptForCmdMode
+}
+
+func GetTaskModePrompt() string {
+	temp := strings.Replace(SysPromptForTaskMode, "FILE_FORMAT", ShellScriptFormat, 1)
+	prompt := strings.Replace(temp, "SHELL_EXAMPLE", ShellExample, 1)
+	return prompt
 }

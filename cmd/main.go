@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"nuwa-engineer/pkg/cmdexe"
 	"nuwa-engineer/pkg/llms/gemini"
@@ -20,6 +21,9 @@ const (
 	CmdMode  = "cmdmode"
 	TaskMode = "taskmode"
 	Exit     = "exit"
+
+	Catchdir   = ".nuwa-terminal"
+	ScriptsDir = "scripts"
 )
 
 var CurrentMode string = ChatMode
@@ -35,7 +39,7 @@ func GetSysPromptAccordingMode(current string) string {
 	case CmdMode:
 		return prompts.GetCmdModePrompt()
 	case TaskMode:
-		return ""
+		return prompts.GetTaskModePrompt()
 	default:
 		return ""
 	}
@@ -62,6 +66,28 @@ func GenerateContent(ctx context.Context, prompt string) (string, error) {
 
 func FailureExit() {
 	os.Exit(1)
+}
+
+func ParseScript(response string) (filename, content string, err error) {
+	logger := pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
+	parser := parser.NewGoCodeParser()
+	sources, err := parser.ParseCode(response)
+	if err != nil {
+		logger.Error("Failed to parse code from LLM response, error:", logger.Args("err", err.Error()))
+		return "", "", err
+	}
+
+	if len(sources) == 0 {
+		logger.Error("No source files found in LLM response")
+		return "", "", fmt.Errorf("no source files found")
+	}
+
+	sources[0].ParseFileName()
+	sources[0].ParseFileContent()
+
+	filename = sources[0].FileName
+	content = sources[0].FileContent
+	return filename, content, nil
 }
 
 func executor(in string) {
@@ -112,6 +138,51 @@ func executor(in string) {
 			return
 		}
 		fmt.Println(output)
+	} else if CurrentMode == TaskMode {
+		fmt.Println(rsp)
+		filename, content, err := ParseScript(rsp)
+		if err != nil {
+			logger.Error("NUWA TERMINAL: failed to parse script,", logger.Args("err", err.Error()))
+			return
+		}
+
+		if filename == "" {
+			logger.Info("NUWA TERMINAL: empty script")
+			return
+		}
+
+		homedir := os.Getenv("HOME")
+		scriptdir := filepath.Join(homedir, Catchdir, ScriptsDir)
+		err = os.MkdirAll(scriptdir, os.ModePerm)
+		if err != nil {
+			logger.Error("NUWA TERMINAL: failed to create script directory,", logger.Args("err", err.Error()))
+			return
+		}
+
+		scriptfile := filepath.Join(scriptdir, filename)
+		err = os.WriteFile(scriptfile, []byte(content), os.ModePerm)
+		if err != nil {
+			logger.Error("NUWA TERMINAL: failed to write script file,", logger.Args("err", err.Error()))
+			return
+		}
+
+		logger.Info("NUWA TERMINAL: script file saved to " + scriptfile)
+
+		output, err := cmdexe.ExecScriptWithOutput(scriptfile)
+		if err != nil {
+			logger.Error("NUWA TERMINAL: failed to execute script,", logger.Args("err", err.Error()))
+			return
+		}
+
+		fmt.Println(output)
+		// remove the script
+		err = os.Remove(scriptfile)
+		if err != nil {
+			logger.Error("NUWA TERMINAL: failed to remove script file,", logger.Args("err", err.Error()))
+			return
+		}
+
+		logger.Info("NUWA TERMINAL: script file removed")
 	}
 
 }
