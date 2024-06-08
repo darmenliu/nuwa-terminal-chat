@@ -212,7 +212,7 @@ func main() {
 	// // Create nuwa-engineer workspace
 	// workspaceManager := NewDefaultWorkSpaceManager()
 	// if workspaceManager.IsWorkspaceEixst() {
-	// 	logger.Info("workspace already exist")
+	//      logger.Info("workspace already exist")
 	// } else {
 	// 	err := workspaceManager.CreateWorkspace()
 	// 	if err != nil {
@@ -220,7 +220,7 @@ func main() {
 	// 		FailureExit()
 	// 	}
 	// }
-
+	defer fmt.Println("Bye!")
 	p := goterm.New(
 		executor,
 		completer,
