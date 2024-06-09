@@ -25,7 +25,7 @@ func NewGemini(ctx context.Context) (llms.Model, error) {
 		return nil, fmt.Errorf("Failed to create Gemini client: %w", err)
 	}
 
-	model := client.GenerativeModel("gemini-pro")
+	model := client.GenerativeModel("gemini-1.5-pro")
 
 	return &Gemini{
 		Client: client,
