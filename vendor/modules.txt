@@ -58,6 +58,10 @@ github.com/containerd/console
 # github.com/davecgh/go-spew v1.1.1
 ## explicit
 github.com/davecgh/go-spew/spew
+# github.com/dlclark/regexp2 v1.10.0
+## explicit; go 1.13
+github.com/dlclark/regexp2
+github.com/dlclark/regexp2/syntax
 # github.com/felixge/httpsnoop v1.0.4
 ## explicit; go 1.13
 github.com/felixge/httpsnoop
@@ -124,11 +128,11 @@ github.com/gookit/color
 # github.com/lithammer/fuzzysearch v1.1.8
 ## explicit; go 1.15
 github.com/lithammer/fuzzysearch/fuzzy
-# github.com/mattn/go-colorable v0.1.7
-## explicit; go 1.13
+# github.com/mattn/go-colorable v0.1.13
+## explicit; go 1.15
 github.com/mattn/go-colorable
-# github.com/mattn/go-isatty v0.0.12
-## explicit; go 1.12
+# github.com/mattn/go-isatty v0.0.20
+## explicit; go 1.15
 github.com/mattn/go-isatty
 # github.com/mattn/go-runewidth v0.0.15
 ## explicit; go 1.9
@@ -139,6 +143,9 @@ github.com/mattn/go-tty
 # github.com/pkg/term v1.1.0
 ## explicit; go 1.14
 github.com/pkg/term/termios
+# github.com/pkoukk/tiktoken-go v0.1.6
+## explicit; go 1.19
+github.com/pkoukk/tiktoken-go
 # github.com/pmezard/go-difflib v1.0.0
 ## explicit
 github.com/pmezard/go-difflib/difflib
@@ -153,6 +160,13 @@ github.com/rivo/uniseg
 # github.com/stretchr/testify v1.9.0
 ## explicit; go 1.17
 github.com/stretchr/testify/assert
+# github.com/tmc/langchaingo v0.1.10
+## explicit; go 1.22.0
+github.com/tmc/langchaingo/callbacks
+github.com/tmc/langchaingo/llms
+github.com/tmc/langchaingo/llms/ollama
+github.com/tmc/langchaingo/llms/ollama/internal/ollamaclient
+github.com/tmc/langchaingo/schema
 # github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e
 ## explicit; go 1.19
 github.com/xo/terminfo

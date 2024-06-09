@@ -1,12 +1,15 @@
 module nuwa-engineer
 
-go 1.21.1
+go 1.22.0
+
+toolchain go1.22.4
 
 require (
 	github.com/c-bata/go-prompt v0.2.5
 	github.com/google/generative-ai-go v0.13.0
 	github.com/pterm/pterm v0.12.78
 	github.com/stretchr/testify v1.9.0
+	github.com/tmc/langchaingo v0.1.10
 	google.golang.org/api v0.178.0
 )
 
@@ -22,6 +25,7 @@ require (
 	cloud.google.com/go/longrunning v0.5.7 // indirect
 	github.com/containerd/console v1.0.3 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/dlclark/regexp2 v1.10.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -33,11 +37,12 @@ require (
 	github.com/googleapis/gax-go/v2 v2.12.4 // indirect
 	github.com/gookit/color v1.5.4 // indirect
 	github.com/lithammer/fuzzysearch v1.1.8 // indirect
-	github.com/mattn/go-colorable v0.1.7 // indirect
-	github.com/mattn/go-isatty v0.0.12 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/mattn/go-tty v0.0.3 // indirect
 	github.com/pkg/term v1.1.0 // indirect
+	github.com/pkoukk/tiktoken-go v0.1.6 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
