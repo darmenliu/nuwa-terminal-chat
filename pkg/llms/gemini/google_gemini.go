@@ -18,14 +18,14 @@ type Gemini struct {
 }
 
 // NewGemini returns a new Gemini client.
-func NewGemini(ctx context.Context) (llms.Model, error) {
+func NewGemini(ctx context.Context, modelName string) (llms.Model, error) {
 	// Access your API key as an environment variable (see "Set up your API key" above)
 	client, err := genai.NewClient(ctx, option.WithAPIKey(os.Getenv("GEMINI_API_KEY")))
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create Gemini client: %w", err)
 	}
 
-	model := client.GenerativeModel("gemini-1.5-pro")
+	model := client.GenerativeModel(modelName)
 
 	return &Gemini{
 		Client: client,

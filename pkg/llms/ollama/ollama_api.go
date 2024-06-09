@@ -4,18 +4,18 @@ import (
 	"context"
 	"fmt"
 
-	"nuwa-engineer/pkg/llms"
+	nuwaLLM "nuwa-engineer/pkg/llms"
 
 	"github.com/tmc/langchaingo/llms"
 	"github.com/tmc/langchaingo/llms/ollama"
 )
 
 type Ollama struct {
-	Client      *ollama.Client
+	Client      *ollama.LLM
 	Temperature float64
 }
 
-func NewOllama(ctx context.Context, model string, temperature float64) (*llms.Model, error) {
+func NewOllama(ctx context.Context, model string, temperature float64) (nuwaLLM.Model, error) {
 
 	llm, err := ollama.New(ollama.WithModel(model))
 	if err != nil {
@@ -29,7 +29,7 @@ func NewOllama(ctx context.Context, model string, temperature float64) (*llms.Mo
 }
 
 func (o *Ollama) GenerateContent(ctx context.Context, prompt string) (string, error) {
-	completion, err := llm.Call(ctx, prompt,
+	completion, err := o.Client.Call(ctx, prompt,
 		llms.WithTemperature(0.8),
 		llms.WithStreamingFunc(func(ctx context.Context, chunk []byte) error {
 			fmt.Print(string(chunk))

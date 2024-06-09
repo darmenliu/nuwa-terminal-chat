@@ -5,9 +5,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"nuwa-engineer/pkg/cmdexe"
+	"nuwa-engineer/pkg/llms"
 	"nuwa-engineer/pkg/llms/gemini"
+	"nuwa-engineer/pkg/llms/ollama"
 	"nuwa-engineer/pkg/parser"
 	"nuwa-engineer/pkg/prompts"
 
@@ -51,9 +54,32 @@ func GetPromptAccordingToCurrentMode(current string, in string) string {
 }
 
 func GenerateContent(ctx context.Context, prompt string) (string, error) {
-	model, err := gemini.NewGemini(ctx)
+
+	llmBackend := os.Getenv("LLM_BACKEND")
+	modelName := os.Getenv("LLM_MODEL_NAME")
+	modeTemperature, err := strconv.ParseFloat(os.Getenv("LLM_TEMPERATURE"), 64)
 	if err != nil {
-		return "", fmt.Errorf("failed to create model: %w", err)
+		return "", fmt.Errorf("failed to parse LLM_TEMPERATURE: %w", err)
+	}
+	if llmBackend == "" {
+		llmBackend = "gemini"
+		modelName = "gemini-1.5-pro"
+	}
+	var model llms.Model
+	switch llmBackend {
+	case "gemini":
+		model, err = gemini.NewGemini(ctx, modelName)
+		if err != nil {
+			return "", fmt.Errorf("failed to create model: %w", err)
+		}
+
+	case "ollama":
+		model, err = ollama.NewOllama(ctx, modelName, modeTemperature)
+		if err != nil {
+			return "", fmt.Errorf("failed to create model: %w", err)
+		}
+	default:
+		return "", fmt.Errorf("unknown LLM backend: %s", llmBackend)
 	}
 	defer model.CloseBackend()
 
