@@ -12,24 +12,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// To get the protoveneer tool:
-//    go install golang.org/x/exp/protoveneer/cmd/protoveneer@latest
+// For the following go:generate line to work, do the following:
+// Install the protoveener tool:
+//    git clone https://github.com/googleapis/google-cloud-go
+//    cd google-cloud-go
+//    go install ./internal/protoveneer/cmd/protoveneer
+//
+// Set the environment variable GOOGLE_CLOUD_GO to the path to the above repo on your machine.
+// For example:
+//     export GOOGLE_CLOUD_GO=$HOME/repos/google-cloud-go
 
-//go:generate protoveneer config.yaml ../../../googleapis/google-cloud-go/ai/generativelanguage/apiv1/generativelanguagepb
+//go:generate protoveneer -license license.txt config.yaml $GOOGLE_CLOUD_GO/ai/generativelanguage/apiv1beta/generativelanguagepb
 
-// Package genai is a client for the Google Labs generative AI model.
 package genai
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"reflect"
 	"strings"
 
-	gl "cloud.google.com/go/ai/generativelanguage/apiv1"
-	pb "cloud.google.com/go/ai/generativelanguage/apiv1/generativelanguagepb"
+	gl "cloud.google.com/go/ai/generativelanguage/apiv1beta"
+	pb "cloud.google.com/go/ai/generativelanguage/apiv1beta/generativelanguagepb"
+	"github.com/google/generative-ai-go/genai/internal"
+	gld "github.com/google/generative-ai-go/genai/internal/generativelanguage/v1beta" // discovery client
 
-	"github.com/google/generative-ai-go/internal"
 	"github.com/google/generative-ai-go/internal/support"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
@@ -39,6 +48,8 @@ import (
 type Client struct {
 	c  *gl.GenerativeClient
 	mc *gl.ModelClient
+	fc *gl.FileClient
+	ds *gld.Service
 }
 
 // NewClient creates a new Google generative AI client.
@@ -49,6 +60,14 @@ type Client struct {
 // You may configure the client by passing in options from the [google.golang.org/api/option]
 // package.
 func NewClient(ctx context.Context, opts ...option.ClientOption) (*Client, error) {
+	if !hasAuthOption(opts) {
+		return nil, errors.New(`You need an auth option to use this client.
+for an API Key: Visit https://ai.google.dev to get one, put it in an environment variable like GEMINI_API_KEY,
+then pass it as an option:
+    genai.NewClient(ctx, option.WithAPIKey(os.Getenv("GEMINI_API_KEY")))
+(If you're doing that already, then maybe the environment variable is empty or unset.)
+Import the option package as "google.golang.org/api/option".`)
+	}
 	c, err := gl.NewGenerativeRESTClient(ctx, opts...)
 	if err != nil {
 		return nil, err
@@ -57,13 +76,44 @@ func NewClient(ctx context.Context, opts ...option.ClientOption) (*Client, error
 	if err != nil {
 		return nil, err
 	}
-	c.SetGoogleClientInfo("gccl", internal.Version)
-	return &Client{c: c, mc: mc}, nil
+	fc, err := gl.NewFileRESTClient(ctx, opts...)
+	if err != nil {
+		return nil, err
+	}
+	ds, err := gld.NewService(ctx, opts...)
+	if err != nil {
+		return nil, err
+	}
+	c.SetGoogleClientInfo("gccl", "v"+internal.Version, "genai-go", internal.Version)
+	return &Client{c, mc, fc, ds}, nil
+}
+
+// hasAuthOption reports whether an authentication-related option was provided.
+//
+// There is no good way to make these checks, because the types of the options
+// are unexported, and the struct that they populates is in an internal package.
+func hasAuthOption(opts []option.ClientOption) bool {
+	for _, opt := range opts {
+		v := reflect.ValueOf(opt)
+		ts := v.Type().String()
+
+		switch ts {
+		case "option.withAPIKey":
+			return v.String() != ""
+
+		case "option.withHttpClient",
+			"option.withTokenSource",
+			"option.withCredentialsFile",
+			"option.withCredentialsJSON":
+			return true
+		}
+	}
+	return false
 }
 
 // Close closes the client.
 func (c *Client) Close() error {
-	return c.c.Close()
+	return errors.Join(c.c.Close(), c.mc.Close(), c.fc.Close())
 }
 
 // GenerativeModel is a model that can generate text.
@@ -75,10 +125,17 @@ type GenerativeModel struct {
 
 	GenerationConfig
 	SafetySettings []*SafetySetting
+	Tools          []*Tool
+	ToolConfig     *ToolConfig // configuration for tools
+	// SystemInstruction (also known as "system prompt") is a more forceful prompt to the model.
+	// The model will adhere the instructions more strongly than if they appeared in a normal prompt.
+	SystemInstruction *Content
 }
 
 // GenerativeModel creates a new instance of the named generative model.
-// For instance, "gemini-pro" or "models/gemini-pro".
+// For instance, "gemini-1.0-pro" or "models/gemini-1.0-pro".
+//
+// To access a tuned model named NAME, pass "tunedModels/NAME".
 func (c *Client) GenerativeModel(name string) *GenerativeModel {
 	return &GenerativeModel{
 		c:        c,
@@ -87,7 +144,7 @@ func (c *Client) GenerativeModel(name string) *GenerativeModel {
 }
 
 func fullModelName(name string) string {
-	if strings.HasPrefix(name, "models/") {
+	if strings.ContainsRune(name, '/') {
 		return name
 	}
 	return "models/" + name
@@ -132,10 +189,13 @@ func (m *GenerativeModel) generateContent(ctx context.Context, req *pb.GenerateC
 
 func (m *GenerativeModel) newGenerateContentRequest(contents ...*Content) *pb.GenerateContentRequest {
 	return &pb.GenerateContentRequest{
-		Model:            m.fullName,
-		Contents:         support.TransformSlice(contents, (*Content).toProto),
-		SafetySettings:   support.TransformSlice(m.SafetySettings, (*SafetySetting).toProto),
-		GenerationConfig: m.GenerationConfig.toProto(),
+		Model:             m.fullName,
+		Contents:          support.TransformSlice(contents, (*Content).toProto),
+		SafetySettings:    support.TransformSlice(m.SafetySettings, (*SafetySetting).toProto),
+		Tools:             support.TransformSlice(m.Tools, (*Tool).toProto),
+		ToolConfig:        m.ToolConfig.toProto(),
+		GenerationConfig:  m.GenerationConfig.toProto(),
+		SystemInstruction: m.SystemInstruction.toProto(),
 	}
 }
 
@@ -180,6 +240,9 @@ func (iter *GenerateContentResponseIterator) Next() (*GenerateContentResponse, e
 
 func protoToResponse(resp *pb.GenerateContentResponse) (*GenerateContentResponse, error) {
 	gcp := (GenerateContentResponse{}).fromProto(resp)
+	if gcp == nil {
+		return nil, errors.New("empty response from model")
+	}
 	// Assume a non-nil PromptFeedback is an error.
 	// TODO: confirm.
 	if gcp.PromptFeedback != nil && gcp.PromptFeedback.BlockReason != BlockReasonUnspecified {
@@ -189,7 +252,7 @@ func protoToResponse(resp *pb.GenerateContentResponse) (*GenerateContentResponse
 	// If any candidate is blocked, error.
 	// TODO: is this too harsh?
 	for _, c := range gcp.Candidates {
-		if c.FinishReason == FinishReasonSafety {
+		if c.FinishReason == FinishReasonSafety || c.FinishReason == FinishReasonRecitation {
 			return nil, &BlockedError{Candidate: c}
 		}
 	}
@@ -214,11 +277,25 @@ func (m *GenerativeModel) newCountTokensRequest(contents ...*Content) *pb.CountT
 	}
 }
 
+// Info returns information about the model.
+func (m *GenerativeModel) Info(ctx context.Context) (*ModelInfo, error) {
+	return m.c.modelInfo(ctx, m.fullName)
+}
+
+func (c *Client) modelInfo(ctx context.Context, fullName string) (*ModelInfo, error) {
+	req := &pb.GetModelRequest{Name: fullName}
+	res, err := c.mc.GetModel(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	return (ModelInfo{}).fromProto(res), nil
+}
+
 // A BlockedError indicates that the model's response was blocked.
 // There can be two underlying causes: the prompt or a candidate response.
 type BlockedError struct {
 	// If non-nil, the model's response was blocked.
-	// Consult the Candidate and SafetyRatings fields for details.
+	// Consult the FinishReason field for details.
 	Candidate *Candidate
 
 	// If non-nil, there was a problem with the prompt.
@@ -240,7 +317,7 @@ func (e *BlockedError) Error() string {
 	return b.String()
 }
 
-// joinResponses  merges the two responses, which should be the result of a streaming call.
+// joinResponses merges the two responses, which should be the result of a streaming call.
 // The first argument is modified.
 func joinResponses(dest, src *GenerateContentResponse) *GenerateContentResponse {
 	if dest == nil {

@@ -1,4 +1,4 @@
-// Copyright 2023 Google LLC
+// Copyright 2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,17 +19,49 @@ package genai
 import (
 	"fmt"
 
-	pb "cloud.google.com/go/ai/generativelanguage/apiv1/generativelanguagepb"
+	pb "cloud.google.com/go/ai/generativelanguage/apiv1beta/generativelanguagepb"
 	"github.com/google/generative-ai-go/internal/support"
+	"google.golang.org/protobuf/types/known/timestamppb"
+	"time"
 )
+
+// BatchEmbedContentsResponse is the response to a `BatchEmbedContentsRequest`.
+type BatchEmbedContentsResponse struct {
+	// Output only. The embeddings for each request, in the same order as provided
+	// in the batch request.
+	Embeddings []*ContentEmbedding
+}
+
+func (v *BatchEmbedContentsResponse) toProto() *pb.BatchEmbedContentsResponse {
+	if v == nil {
+		return nil
+	}
+	return &pb.BatchEmbedContentsResponse{
+		Embeddings: support.TransformSlice(v.Embeddings, (*ContentEmbedding).toProto),
+	}
+}
+
+func (BatchEmbedContentsResponse) fromProto(p *pb.BatchEmbedContentsResponse) *BatchEmbedContentsResponse {
+	if p == nil {
+		return nil
+	}
+	return &BatchEmbedContentsResponse{
+		Embeddings: support.TransformSlice(p.Embeddings, (ContentEmbedding{}).fromProto),
+	}
+}
 
 // Blob contains raw media bytes.
 //
 // Text should not be sent as raw bytes, use the 'text' field.
 type Blob struct {
 	// The IANA standard MIME type of the source data.
-	// Accepted types include: "image/png", "image/jpeg", "image/heic",
-	// "image/heif", "image/webp".
+	// Examples:
+	//   - image/png
+	//   - image/jpeg
+	//
+	// If an unsupported MIME type is provided, an error will be returned. For a
+	// complete list of supported types, see [Supported file
+	// formats](https://ai.google.dev/gemini-api/docs/prompting_with_media#supported_file_formats).
 	MIMEType string
 	// Raw bytes for media formats.
 	Data []byte
@@ -311,6 +343,129 @@ func (EmbedContentResponse) fromProto(p *pb.EmbedContentResponse) *EmbedContentR
 	}
 }
 
+// File is a file uploaded to the API.
+type File struct {
+	// Immutable. Identifier. The `File` resource name. The ID (name excluding the
+	// "files/" prefix) can contain up to 40 characters that are lowercase
+	// alphanumeric or dashes (-). The ID cannot start or end with a dash. If the
+	// name is empty on create, a unique name will be generated. Example:
+	// `files/123-456`
+	Name string
+	// Optional. The human-readable display name for the `File`. The display name
+	// must be no more than 512 characters in length, including spaces. Example:
+	// "Welcome Image"
+	DisplayName string
+	// Output only. MIME type of the file.
+	MIMEType string
+	// Output only. Size of the file in bytes.
+	SizeBytes int64
+	// Output only. The timestamp of when the `File` was created.
+	CreateTime time.Time
+	// Output only. The timestamp of when the `File` was last updated.
+	UpdateTime time.Time
+	// Output only. The timestamp of when the `File` will be deleted. Only set if
+	// the `File` is scheduled to expire.
+	ExpirationTime time.Time
+	// Output only. SHA-256 hash of the uploaded bytes.
+	Sha256Hash []byte
+	// Output only. The uri of the `File`.
+	URI string
+	// Output only. Processing state of the File.
+	State FileState
+}
+
+func (v *File) toProto() *pb.File {
+	if v == nil {
+		return nil
+	}
+	return &pb.File{
+		Name:           v.Name,
+		DisplayName:    v.DisplayName,
+		MimeType:       v.MIMEType,
+		SizeBytes:      v.SizeBytes,
+		CreateTime:     timestamppb.New(v.CreateTime),
+		UpdateTime:     timestamppb.New(v.UpdateTime),
+		ExpirationTime: timestamppb.New(v.ExpirationTime),
+		Sha256Hash:     v.Sha256Hash,
+		Uri:            v.URI,
+		State:          pb.File_State(v.State),
+	}
+}
+
+func (File) fromProto(p *pb.File) *File {
+	if p == nil {
+		return nil
+	}
+	return &File{
+		Name:           p.Name,
+		DisplayName:    p.DisplayName,
+		MIMEType:       p.MimeType,
+		SizeBytes:      p.SizeBytes,
+		CreateTime:     support.TimeFromProto(p.CreateTime),
+		UpdateTime:     support.TimeFromProto(p.UpdateTime),
+		ExpirationTime: support.TimeFromProto(p.ExpirationTime),
+		Sha256Hash:     p.Sha256Hash,
+		URI:            p.Uri,
+		State:          FileState(p.State),
+	}
+}
+
+// FileData is URI based data.
+type FileData struct {
+	// Optional. The IANA standard MIME type of the source data.
+	MIMEType string
+	// Required. URI.
+	URI string
+}
+
+func (v *FileData) toProto() *pb.FileData {
+	if v == nil {
+		return nil
+	}
+	return &pb.FileData{
+		MimeType: v.MIMEType,
+		FileUri:  v.URI,
+	}
+}
+
+func (FileData) fromProto(p *pb.FileData) *FileData {
+	if p == nil {
+		return nil
+	}
+	return &FileData{
+		MIMEType: p.MimeType,
+		URI:      p.FileUri,
+	}
+}
+
+// FileState represents states for the lifecycle of a File.
+type FileState int32
+
+const (
+	// FileStateUnspecified means the default value. This value is used if the state is omitted.
+	FileStateUnspecified FileState = 0
+	// FileStateProcessing means file is being processed and cannot be used for inference yet.
+	FileStateProcessing FileState = 1
+	// FileStateActive means file is processed and available for inference.
+	FileStateActive FileState = 2
+	// FileStateFailed means file failed processing.
+	FileStateFailed FileState = 10
+)
+
+var namesForFileState = map[FileState]string{
+	FileStateUnspecified: "FileStateUnspecified",
+	FileStateProcessing:  "FileStateProcessing",
+	FileStateActive:      "FileStateActive",
+	FileStateFailed:      "FileStateFailed",
+}
+
+func (v FileState) String() string {
+	if n, ok := namesForFileState[v]; ok {
+		return n
+	}
+	return fmt.Sprintf("FileState(%d)", v)
+}
+
 // FinishReason is defines the reason why the model stopped generating tokens.
 type FinishReason int32
 
@@ -345,6 +500,181 @@ func (v FinishReason) String() string {
 	return fmt.Sprintf("FinishReason(%d)", v)
 }
 
+// FunctionCall is a predicted `FunctionCall` returned from the model that contains
+// a string representing the `FunctionDeclaration.name` with the
+// arguments and their values.
+type FunctionCall struct {
+	// Required. The name of the function to call.
+	// Must be a-z, A-Z, 0-9, or contain underscores and dashes, with a maximum
+	// length of 63.
+	Name string
+	// Optional. The function parameters and values in JSON object format.
+	Args map[string]any
+}
+
+func (v *FunctionCall) toProto() *pb.FunctionCall {
+	if v == nil {
+		return nil
+	}
+	return &pb.FunctionCall{
+		Name: v.Name,
+		Args: support.MapToStructPB(v.Args),
+	}
+}
+
+func (FunctionCall) fromProto(p *pb.FunctionCall) *FunctionCall {
+	if p == nil {
+		return nil
+	}
+	return &FunctionCall{
+		Name: p.Name,
+		Args: support.MapFromStructPB(p.Args),
+	}
+}
+
+// FunctionCallingConfig holds configuration for function calling.
+type FunctionCallingConfig struct {
+	// Optional. Specifies the mode in which function calling should execute. If
+	// unspecified, the default value will be set to AUTO.
+	Mode FunctionCallingMode
+	// Optional. A set of function names that, when provided, limits the functions
+	// the model will call.
+	//
+	// This should only be set when the Mode is ANY. Function names
+	// should match [FunctionDeclaration.name]. With mode set to ANY, model will
+	// predict a function call from the set of function names provided.
+	AllowedFunctionNames []string
+}
+
+func (v *FunctionCallingConfig) toProto() *pb.FunctionCallingConfig {
+	if v == nil {
+		return nil
+	}
+	return &pb.FunctionCallingConfig{
+		Mode:                 pb.FunctionCallingConfig_Mode(v.Mode),
+		AllowedFunctionNames: v.AllowedFunctionNames,
+	}
+}
+
+func (FunctionCallingConfig) fromProto(p *pb.FunctionCallingConfig) *FunctionCallingConfig {
+	if p == nil {
+		return nil
+	}
+	return &FunctionCallingConfig{
+		Mode:                 FunctionCallingMode(p.Mode),
+		AllowedFunctionNames: p.AllowedFunctionNames,
+	}
+}
+
+// FunctionCallingMode is defines the execution behavior for function calling by defining the
+// execution mode.
+type FunctionCallingMode int32
+
+const (
+	// FunctionCallingUnspecified means unspecified function calling mode. This value should not be used.
+	FunctionCallingUnspecified FunctionCallingMode = 0
+	// FunctionCallingAuto means default model behavior, model decides to predict either a function call
+	// or a natural language repspose.
+	FunctionCallingAuto FunctionCallingMode = 1
+	// FunctionCallingAny means model is constrained to always predicting a function call only.
+	// If "allowed_function_names" are set, the predicted function call will be
+	// limited to any one of "allowed_function_names", else the predicted
+	// function call will be any one of the provided "function_declarations".
+	FunctionCallingAny FunctionCallingMode = 2
+	// FunctionCallingNone means model will not predict any function call. Model behavior is same as when
+	// not passing any function declarations.
+	FunctionCallingNone FunctionCallingMode = 3
+)
+
+var namesForFunctionCallingMode = map[FunctionCallingMode]string{
+	FunctionCallingUnspecified: "FunctionCallingUnspecified",
+	FunctionCallingAuto:        "FunctionCallingAuto",
+	FunctionCallingAny:         "FunctionCallingAny",
+	FunctionCallingNone:        "FunctionCallingNone",
+}
+
+func (v FunctionCallingMode) String() string {
+	if n, ok := namesForFunctionCallingMode[v]; ok {
+		return n
+	}
+	return fmt.Sprintf("FunctionCallingMode(%d)", v)
+}
+
+// FunctionDeclaration is structured representation of a function declaration as defined by the
+// [OpenAPI 3.03 specification](https://spec.openapis.org/oas/v3.0.3). Included
+// in this declaration are the function name and parameters. This
+// FunctionDeclaration is a representation of a block of code that can be used
+// as a `Tool` by the model and executed by the client.
+type FunctionDeclaration struct {
+	// Required. The name of the function.
+	// Must be a-z, A-Z, 0-9, or contain underscores and dashes, with a maximum
+	// length of 63.
+	Name string
+	// Required. A brief description of the function.
+	Description string
+	// Optional. Describes the parameters to this function. Reflects the Open
+	// API 3.03 Parameter Object string Key: the name of the parameter. Parameter
+	// names are case sensitive. Schema Value: the Schema defining the type used
+	// for the parameter.
+	Parameters *Schema
+}
+
+func (v *FunctionDeclaration) toProto() *pb.FunctionDeclaration {
+	if v == nil {
+		return nil
+	}
+	return &pb.FunctionDeclaration{
+		Name:        v.Name,
+		Description: v.Description,
+		Parameters:  v.Parameters.toProto(),
+	}
+}
+
+func (FunctionDeclaration) fromProto(p *pb.FunctionDeclaration) *FunctionDeclaration {
+	if p == nil {
+		return nil
+	}
+	return &FunctionDeclaration{
+		Name:        p.Name,
+		Description: p.Description,
+		Parameters:  (Schema{}).fromProto(p.Parameters),
+	}
+}
+
+// FunctionResponse is the result output from a `FunctionCall` that contains a string
+// representing the `FunctionDeclaration.name` and a structured JSON
+// object containing any output from the function is used as context to
+// the model. This should contain the result of a`FunctionCall` made
+// based on model prediction.
+type FunctionResponse struct {
+	// Required. The name of the function to call.
+	// Must be a-z, A-Z, 0-9, or contain underscores and dashes, with a maximum
+	// length of 63.
+	Name string
+	// Required. The function response in JSON object format.
+	Response map[string]any
+}
+
+func (v *FunctionResponse) toProto() *pb.FunctionResponse {
+	if v == nil {
+		return nil
+	}
+	return &pb.FunctionResponse{
+		Name:     v.Name,
+		Response: support.MapToStructPB(v.Response),
+	}
+}
+
+func (FunctionResponse) fromProto(p *pb.FunctionResponse) *FunctionResponse {
+	if p == nil {
+		return nil
+	}
+	return &FunctionResponse{
+		Name:     p.Name,
+		Response: support.MapFromStructPB(p.Response),
+	}
+}
+
 // GenerateContentResponse is the response from a GenerateContent or GenerateContentStream call.
 //
 // Note on safety ratings and content filtering. They are reported for both
@@ -360,6 +690,8 @@ type GenerateContentResponse struct {
 	Candidates []*Candidate
 	// Returns the prompt's feedback related to the content filters.
 	PromptFeedback *PromptFeedback
+	// Output only. Metadata on the generation requests' token usage.
+	UsageMetadata *UsageMetadata
 }
 
 func (v *GenerateContentResponse) toProto() *pb.GenerateContentResponse {
@@ -369,6 +701,7 @@ func (v *GenerateContentResponse) toProto() *pb.GenerateContentResponse {
 	return &pb.GenerateContentResponse{
 		Candidates:     support.TransformSlice(v.Candidates, (*Candidate).toProto),
 		PromptFeedback: v.PromptFeedback.toProto(),
+		UsageMetadata:  v.UsageMetadata.toProto(),
 	}
 }
 
@@ -379,6 +712,7 @@ func (GenerateContentResponse) fromProto(p *pb.GenerateContentResponse) *Generat
 	return &GenerateContentResponse{
 		Candidates:     support.TransformSlice(p.Candidates, (Candidate{}).fromProto),
 		PromptFeedback: (PromptFeedback{}).fromProto(p.PromptFeedback),
+		UsageMetadata:  (UsageMetadata{}).fromProto(p.UsageMetadata),
 	}
 }
 
@@ -387,7 +721,7 @@ func (GenerateContentResponse) fromProto(p *pb.GenerateContentResponse) *Generat
 type GenerationConfig struct {
 	// Optional. Number of generated responses to return.
 	//
-	// This value must be between [1, 8], inclusive. If unset, this will default
+	// Currently, this value can only be set to 1. If unset, this will default
 	// to 1.
 	CandidateCount *int32
 	// Optional. The set of character sequences (up to 5) that will stop output
@@ -397,17 +731,15 @@ type GenerationConfig struct {
 	StopSequences []string
 	// Optional. The maximum number of tokens to include in a candidate.
 	//
-	// If unset, this will default to output_token_limit specified in the `Model`
-	// specification.
+	// Note: The default value varies by model, see the `Model.output_token_limit`
+	// attribute of the `Model` returned from the `getModel` function.
 	MaxOutputTokens *int32
 	// Optional. Controls the randomness of the output.
-	// Note: The default value varies by model, see the `Model.temperature`
-	// attribute of the `Model` returned the `getModel` function.
 	//
-	// Values can range from [0.0,1.0],
-	// inclusive. A value closer to 1.0 will produce responses that are more
-	// varied and creative, while a value closer to 0.0 will typically result in
-	// more straightforward responses from the model.
+	// Note: The default value varies by model, see the `Model.temperature`
+	// attribute of the `Model` returned from the `getModel` function.
+	//
+	// Values can range from [0.0, 2.0].
 	Temperature *float32
 	// Optional. The maximum cumulative probability of tokens to consider when
 	// sampling.
@@ -420,18 +752,33 @@ type GenerationConfig struct {
 	// of tokens based on the cumulative probability.
 	//
 	// Note: The default value varies by model, see the `Model.top_p`
-	// attribute of the `Model` returned the `getModel` function.
+	// attribute of the `Model` returned from the `getModel` function.
 	TopP *float32
 	// Optional. The maximum number of tokens to consider when sampling.
 	//
-	// The model uses combined Top-k and nucleus sampling.
-	//
+	// Models use nucleus sampling or combined Top-k and nucleus sampling.
 	// Top-k sampling considers the set of `top_k` most probable tokens.
-	// Defaults to 40.
+	// Models running with nucleus sampling don't allow top_k setting.
 	//
 	// Note: The default value varies by model, see the `Model.top_k`
-	// attribute of the `Model` returned the `getModel` function.
+	// attribute of the `Model` returned from the `getModel` function. Empty
+	// `top_k` field in `Model` indicates the model doesn't apply top-k sampling
+	// and doesn't allow setting `top_k` on requests.
 	TopK *int32
+	// Optional. Output response mimetype of the generated candidate text.
+	// Supported mimetype:
+	// `text/plain`: (default) Text output.
+	// `application/json`: JSON response in the candidates.
+	ResponseMIMEType string
+	// Optional. Output response schema of the generated candidate text when
+	// response mime type can have schema. Schema can be objects, primitives or
+	// arrays and is a subset of [OpenAPI
+	// schema](https://spec.openapis.org/oas/v3.0.3#schema).
+	//
+	// If set, a compatible response_mime_type must also be set.
+	// Compatible mimetypes:
+	// `application/json`: Schema for JSON response.
+	ResponseSchema *Schema
 }
 
 func (v *GenerationConfig) toProto() *pb.GenerationConfig {
@@ -439,12 +786,14 @@ func (v *GenerationConfig) toProto() *pb.GenerationConfig {
 		return nil
 	}
 	return &pb.GenerationConfig{
-		CandidateCount:  v.CandidateCount,
-		StopSequences:   v.StopSequences,
-		MaxOutputTokens: v.MaxOutputTokens,
-		Temperature:     v.Temperature,
-		TopP:            v.TopP,
-		TopK:            v.TopK,
+		CandidateCount:   v.CandidateCount,
+		StopSequences:    v.StopSequences,
+		MaxOutputTokens:  v.MaxOutputTokens,
+		Temperature:      v.Temperature,
+		TopP:             v.TopP,
+		TopK:             v.TopK,
+		ResponseMimeType: v.ResponseMIMEType,
+		ResponseSchema:   v.ResponseSchema.toProto(),
 	}
 }
 
@@ -453,12 +802,14 @@ func (GenerationConfig) fromProto(p *pb.GenerationConfig) *GenerationConfig {
 		return nil
 	}
 	return &GenerationConfig{
-		CandidateCount:  p.CandidateCount,
-		StopSequences:   p.StopSequences,
-		MaxOutputTokens: p.MaxOutputTokens,
-		Temperature:     p.Temperature,
-		TopP:            p.TopP,
-		TopK:            p.TopK,
+		CandidateCount:   p.CandidateCount,
+		StopSequences:    p.StopSequences,
+		MaxOutputTokens:  p.MaxOutputTokens,
+		Temperature:      p.Temperature,
+		TopP:             p.TopP,
+		TopK:             p.TopK,
+		ResponseMIMEType: p.ResponseMimeType,
+		ResponseSchema:   (Schema{}).fromProto(p.ResponseSchema),
 	}
 }
 
@@ -504,9 +855,9 @@ const (
 	HarmCategoryUnspecified HarmCategory = 0
 	// HarmCategoryDerogatory means negative or harmful comments targeting identity and/or protected attribute.
 	HarmCategoryDerogatory HarmCategory = 1
-	// HarmCategoryToxicity means content that is rude, disrepspectful, or profane.
+	// HarmCategoryToxicity means content that is rude, disrespectful, or profane.
 	HarmCategoryToxicity HarmCategory = 2
-	// HarmCategoryViolence means describes scenarios depictng violence against an individual or group, or
+	// HarmCategoryViolence means describes scenarios depicting violence against an individual or group, or
 	// general descriptions of gore.
 	HarmCategoryViolence HarmCategory = 3
 	// HarmCategorySexual means contains references to sexual acts or other lewd content.
@@ -580,8 +931,8 @@ func (v HarmProbability) String() string {
 	return fmt.Sprintf("HarmProbability(%d)", v)
 }
 
-// Model is information about a Generative Language Model.
-type Model struct {
+// ModelInfo is information about a language model.
+type ModelInfo struct {
 	// Required. The resource name of the `Model`.
 	//
 	// Format: `models/{model}` with a `{model}` naming convention of:
@@ -597,7 +948,7 @@ type Model struct {
 	// Examples:
 	//
 	// * `chat-bison`
-	BaseModeID string
+	BaseModelID string
 	// Required. The version number of the model.
 	//
 	// This represents the major version
@@ -638,16 +989,18 @@ type Model struct {
 	// Top-k sampling considers the set of `top_k` most probable tokens.
 	// This value specifies default to be used by the backend while making the
 	// call to the model.
+	// If empty, indicates the model doesn't use top-k sampling, and `top_k` isn't
+	// allowed as a generation parameter.
 	TopK int32
 }
 
-func (v *Model) toProto() *pb.Model {
+func (v *ModelInfo) toProto() *pb.Model {
 	if v == nil {
 		return nil
 	}
 	return &pb.Model{
 		Name:                       v.Name,
-		BaseModelId:                v.BaseModeID,
+		BaseModelId:                v.BaseModelID,
 		Version:                    v.Version,
 		DisplayName:                v.DisplayName,
 		Description:                v.Description,
@@ -660,13 +1013,13 @@ func (v *Model) toProto() *pb.Model {
 	}
 }
 
-func (Model) fromProto(p *pb.Model) *Model {
+func (ModelInfo) fromProto(p *pb.Model) *ModelInfo {
 	if p == nil {
 		return nil
 	}
-	return &Model{
+	return &ModelInfo{
 		Name:                       p.Name,
-		BaseModeID:                 p.BaseModelId,
+		BaseModelID:                p.BaseModelId,
 		Version:                    p.Version,
 		DisplayName:                p.DisplayName,
 		Description:                p.Description,
@@ -750,7 +1103,7 @@ func (SafetyRating) fromProto(p *pb.SafetyRating) *SafetyRating {
 
 // SafetySetting is safety setting, affecting the safety-blocking behavior.
 //
-// Passing a safety setting for a category changes the allowed proability that
+// Passing a safety setting for a category changes the allowed probability that
 // content is blocked.
 type SafetySetting struct {
 	// Required. The category for this setting.
@@ -779,6 +1132,68 @@ func (SafetySetting) fromProto(p *pb.SafetySetting) *SafetySetting {
 	}
 }
 
+// Schema is the `Schema` object allows the definition of input and output data types.
+// These types can be objects, but also primitives and arrays.
+// Represents a select subset of an [OpenAPI 3.0 schema
+// object](https://spec.openapis.org/oas/v3.0.3#schema).
+type Schema struct {
+	// Required. Data type.
+	Type Type
+	// Optional. The format of the data. This is used only for primitive
+	// datatypes. Supported formats:
+	//
+	//	for NUMBER type: float, double
+	//	for INTEGER type: int32, int64
+	Format string
+	// Optional. A brief description of the parameter. This could contain examples
+	// of use. Parameter description may be formatted as Markdown.
+	Description string
+	// Optional. Indicates if the value may be null.
+	Nullable bool
+	// Optional. Possible values of the element of Type.STRING with enum format.
+	// For example we can define an Enum Direction as :
+	// {type:STRING, format:enum, enum:["EAST", NORTH", "SOUTH", "WEST"]}
+	Enum []string
+	// Optional. Schema of the elements of Type.ARRAY.
+	Items *Schema
+	// Optional. Properties of Type.OBJECT.
+	Properties map[string]*Schema
+	// Optional. Required properties of Type.OBJECT.
+	Required []string
+}
+
+func (v *Schema) toProto() *pb.Schema {
+	if v == nil {
+		return nil
+	}
+	return &pb.Schema{
+		Type:        pb.Type(v.Type),
+		Format:      v.Format,
+		Description: v.Description,
+		Nullable:    v.Nullable,
+		Enum:        v.Enum,
+		Items:       v.Items.toProto(),
+		Properties:  support.TransformMapValues(v.Properties, (*Schema).toProto),
+		Required:    v.Required,
+	}
+}
+
+func (Schema) fromProto(p *pb.Schema) *Schema {
+	if p == nil {
+		return nil
+	}
+	return &Schema{
+		Type:        Type(p.Type),
+		Format:      p.Format,
+		Description: p.Description,
+		Nullable:    p.Nullable,
+		Enum:        p.Enum,
+		Items:       (Schema{}).fromProto(p.Items),
+		Properties:  support.TransformMapValues(p.Properties, (Schema{}).fromProto),
+		Required:    p.Required,
+	}
+}
+
 // TaskType is type of task for which the embedding will be used.
 type TaskType int32
 
@@ -795,6 +1210,10 @@ const (
 	TaskTypeClassification TaskType = 4
 	// TaskTypeClustering means specifies that the embeddings will be used for clustering.
 	TaskTypeClustering TaskType = 5
+	// TaskTypeQuestionAnswering means specifies that the given text will be used for question answering.
+	TaskTypeQuestionAnswering TaskType = 6
+	// TaskTypeFactVerification means specifies that the given text will be used for fact verification.
+	TaskTypeFactVerification TaskType = 7
 )
 
 var namesForTaskType = map[TaskType]string{
@@ -804,6 +1223,8 @@ var namesForTaskType = map[TaskType]string{
 	TaskTypeSemanticSimilarity: "TaskTypeSemanticSimilarity",
 	TaskTypeClassification:     "TaskTypeClassification",
 	TaskTypeClustering:         "TaskTypeClustering",
+	TaskTypeQuestionAnswering:  "TaskTypeQuestionAnswering",
+	TaskTypeFactVerification:   "TaskTypeFactVerification",
 }
 
 func (v TaskType) String() string {
@@ -811,4 +1232,138 @@ func (v TaskType) String() string {
 		return n
 	}
 	return fmt.Sprintf("TaskType(%d)", v)
+}
+
+// Tool details that the model may use to generate response.
+//
+// A `Tool` is a piece of code that enables the system to interact with
+// external systems to perform an action, or set of actions, outside of
+// knowledge and scope of the model.
+type Tool struct {
+	// Optional. A list of `FunctionDeclarations` available to the model that can
+	// be used for function calling.
+	//
+	// The model or system does not execute the function. Instead the defined
+	// function may be returned as a [FunctionCall][content.part.function_call]
+	// with arguments to the client side for execution. The model may decide to
+	// call a subset of these functions by populating
+	// [FunctionCall][content.part.function_call] in the response. The next
+	// conversation turn may contain a
+	// [FunctionResponse][content.part.function_response]
+	// with the [content.role] "function" generation context for the next model
+	// turn.
+	FunctionDeclarations []*FunctionDeclaration
+}
+
+func (v *Tool) toProto() *pb.Tool {
+	if v == nil {
+		return nil
+	}
+	return &pb.Tool{
+		FunctionDeclarations: support.TransformSlice(v.FunctionDeclarations, (*FunctionDeclaration).toProto),
+	}
+}
+
+func (Tool) fromProto(p *pb.Tool) *Tool {
+	if p == nil {
+		return nil
+	}
+	return &Tool{
+		FunctionDeclarations: support.TransformSlice(p.FunctionDeclarations, (FunctionDeclaration{}).fromProto),
+	}
+}
+
+// ToolConfig is the Tool configuration containing parameters for specifying `Tool` use
+// in the request.
+type ToolConfig struct {
+	// Optional. Function calling config.
+	FunctionCallingConfig *FunctionCallingConfig
+}
+
+func (v *ToolConfig) toProto() *pb.ToolConfig {
+	if v == nil {
+		return nil
+	}
+	return &pb.ToolConfig{
+		FunctionCallingConfig: v.FunctionCallingConfig.toProto(),
+	}
+}
+
+func (ToolConfig) fromProto(p *pb.ToolConfig) *ToolConfig {
+	if p == nil {
+		return nil
+	}
+	return &ToolConfig{
+		FunctionCallingConfig: (FunctionCallingConfig{}).fromProto(p.FunctionCallingConfig),
+	}
+}
+
+// Type contains the list of OpenAPI data types as defined by
+// https://spec.openapis.org/oas/v3.0.3#data-types
+type Type int32
+
+const (
+	// TypeUnspecified means not specified, should not be used.
+	TypeUnspecified Type = 0
+	// TypeString means string type.
+	TypeString Type = 1
+	// TypeNumber means number type.
+	TypeNumber Type = 2
+	// TypeInteger means integer type.
+	TypeInteger Type = 3
+	// TypeBoolean means boolean type.
+	TypeBoolean Type = 4
+	// TypeArray means array type.
+	TypeArray Type = 5
+	// TypeObject means object type.
+	TypeObject Type = 6
+)
+
+var namesForType = map[Type]string{
+	TypeUnspecified: "TypeUnspecified",
+	TypeString:      "TypeString",
+	TypeNumber:      "TypeNumber",
+	TypeInteger:     "TypeInteger",
+	TypeBoolean:     "TypeBoolean",
+	TypeArray:       "TypeArray",
+	TypeObject:      "TypeObject",
+}
+
+func (v Type) String() string {
+	if n, ok := namesForType[v]; ok {
+		return n
+	}
+	return fmt.Sprintf("Type(%d)", v)
+}
+
+// UsageMetadata is metadata on the generation request's token usage.
+type UsageMetadata struct {
+	// Number of tokens in the prompt.
+	PromptTokenCount int32
+	// Total number of tokens across the generated candidates.
+	CandidatesTokenCount int32
+	// Total token count for the generation request (prompt + candidates).
+	TotalTokenCount int32
+}
+
+func (v *UsageMetadata) toProto() *pb.GenerateContentResponse_UsageMetadata {
+	if v == nil {
+		return nil
+	}
+	return &pb.GenerateContentResponse_UsageMetadata{
+		PromptTokenCount:     v.PromptTokenCount,
+		CandidatesTokenCount: v.CandidatesTokenCount,
+		TotalTokenCount:      v.TotalTokenCount,
+	}
+}
+
+func (UsageMetadata) fromProto(p *pb.GenerateContentResponse_UsageMetadata) *UsageMetadata {
+	if p == nil {
+		return nil
+	}
+	return &UsageMetadata{
+		PromptTokenCount:     p.PromptTokenCount,
+		CandidatesTokenCount: p.CandidatesTokenCount,
+		TotalTokenCount:      p.TotalTokenCount,
+	}
 }

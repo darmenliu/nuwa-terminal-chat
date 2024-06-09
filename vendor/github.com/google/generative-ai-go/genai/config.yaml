@@ -16,7 +16,7 @@
 
 package: genai
 
-protoImportPath: cloud.google.com/go/ai/generativelanguage/apiv1/generativelanguagepb
+protoImportPath: cloud.google.com/go/ai/generativelanguage/apiv1beta/generativelanguagepb
 supportImportPath: github.com/google/generative-ai-go/internal/support
 
 types:
@@ -61,7 +61,19 @@ types:
           name: MIMEType
       docVerb: contains
 
+    FileData:
+      fields:
+        MimeType:
+          name: MIMEType
+        FileUri:
+          name: URI
+          # TODO(jba): support field doc in protoveneer
+          # doc: 'The URI returned from UploadFile or GetFile.'
+
     GenerationConfig:
+      fields:
+        ResponseMimeType:
+          name: ResponseMIMEType
 
     SafetySetting:
 
@@ -82,6 +94,8 @@ types:
       fields:
         Index:
           type: int32
+        GroundingAttributions:
+          omit: true
 
     GenerateContentResponse_PromptFeedback:
       name: PromptFeedback
@@ -95,13 +109,16 @@ types:
         TaskType_TASK_TYPE_UNSPECIFIED: TaskTypeUnspecified
 
     EmbedContentResponse:
+    BatchEmbedContentsResponse:
 
     ContentEmbedding:
 
     Model:
+      name: ModelInfo
+      doc: 'is information about a language model.'
       fields:
         BaseModelId:
-          name: BaseModeID
+          name: BaseModelID
         Temperature:
           type: float32
         TopP:
@@ -109,7 +126,57 @@ types:
         TopK:
           type: int32
 
+    # Types for function calling
+    Tool:
+    ToolConfig:
+    FunctionDeclaration:
+    FunctionCall:
+    FunctionResponse:
+    Schema:
 
+    Type:
+      protoPrefix: Type_
+      veneerPrefix: ''
+
+    FunctionCallingConfig:
+      doc: 'holds configuration for function calling.'
+
+    FunctionCallingConfig_Mode:
+      name: FunctionCallingMode
+      protoPrefix: FunctionCallingConfig
+      veneerPrefix: FunctionCalling
+      valueNames:
+        FunctionCallingConfig_MODE_UNSPECIFIED: FunctionCallingUnspecified
+
+    File:
+      fields:
+        Uri:
+          name: URI
+        MimeType:
+          name: MIMEType
+        Error:
+          # TODO(jba): support or convert status.Status
+          omit: true
+        Metadata:
+          # TODO(jba): support
+          omit: true
+    File_State:
+      name: FileState
+      docVerb: represents
+      protoPrefix: File
+      veneerPrefix: FileState
+      valueNames:
+        File_STATE_UNSPECIFIED: FileStateUnspecified
+      
+    GenerateContentResponse_UsageMetadata:
+      name: UsageMetadata
+      fields:
+        PromptTokenCount:
+          type: int32
+        CandidatesTokenCount:
+          type: int32
+        TotalTokenCount:
+          type: int32
 
 # Omit everything not explicitly configured.
 omitTypes:

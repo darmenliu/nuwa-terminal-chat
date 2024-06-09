@@ -17,7 +17,7 @@ package genai
 import (
 	"fmt"
 
-	pb "cloud.google.com/go/ai/generativelanguage/apiv1/generativelanguagepb"
+	pb "cloud.google.com/go/ai/generativelanguage/apiv1beta/generativelanguagepb"
 )
 
 const (
@@ -25,7 +25,7 @@ const (
 	roleModel = "model"
 )
 
-// A Part is either a Text, a Blob, or a FileData.
+// A Part is either a Text, a Blob or a FunctionResponse.
 type Part interface {
 	toPart() *pb.Part
 }
@@ -46,6 +46,12 @@ func partFromProto(p *pb.Part) Part {
 			MIMEType: d.InlineData.MimeType,
 			Data:     d.InlineData.Data,
 		}
+	case *pb.Part_FunctionCall:
+		return *(FunctionCall{}).fromProto(d.FunctionCall)
+
+	case *pb.Part_FunctionResponse:
+		panic("FunctionResponse unimplemented")
+
 	default:
 		panic(fmt.Errorf("unknown Part.Data type %T", p.Data))
 	}
@@ -79,6 +85,30 @@ func ImageData(format string, data []byte) Blob {
 	}
 }
 
+func (f FunctionCall) toPart() *pb.Part {
+	return &pb.Part{
+		Data: &pb.Part_FunctionCall{
+			FunctionCall: f.toProto(),
+		},
+	}
+}
+
+func (f FunctionResponse) toPart() *pb.Part {
+	return &pb.Part{
+		Data: &pb.Part_FunctionResponse{
+			FunctionResponse: f.toProto(),
+		},
+	}
+}
+
+func (fd FileData) toPart() *pb.Part {
+	return &pb.Part{
+		Data: &pb.Part_FileData{
+			FileData: fd.toProto(),
+		},
+	}
+}
+
 // Ptr returns a pointer to its argument.
 // It can be used to initialize pointer fields:
 //
@@ -99,3 +129,17 @@ func (c *GenerationConfig) SetTopP(x float32) { c.TopP = &x }
 
 // SetTopK sets the TopK field.
 func (c *GenerationConfig) SetTopK(x int32) { c.TopK = &x }
+
+// FunctionCalls return all the FunctionCall parts in the candidate.
+func (c *Candidate) FunctionCalls() []FunctionCall {
+	if c.Content == nil {
+		return nil
+	}
+	var fcs []FunctionCall
+	for _, p := range c.Content.Parts {
+		if fc, ok := p.(FunctionCall); ok {
+			fcs = append(fcs, fc)
+		}
+	}
+	return fcs
+}
