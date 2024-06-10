@@ -13,7 +13,9 @@ git clone https://github.com/darmenliu/nuwa-terminal-chat.git
 cd nuwa-terminal-chat
 make
 
-export GEMINI_API_KEY=<your gemini api key>
+# use sed to replace GEMINI_API_KEY=apikey to real gemini api key
+sed -i 's/GEMINI_API_KEY=apikey/GEMINI_API_KEY=<your gemini api key>/g' envs.sh
+source envs.sh
 
 # run nuwa-terminal-chat
 ./nuwa-terminal
@@ -136,6 +138,56 @@ cafbf8eb0ca8   b8aa50768fd6                "/usr/local/bin/kube…"   5 minutes 
 
 
 ```
+
+## Configration
+
+### Use gemini as backend
+
+The default backend LLM is gemini model. but you need to replace GEMINI_API_KEY=apikey to real gemini api key.
+
+``` bash
+
+# use sed to replace GEMINI_API_KEY=apikey to real gemini api key
+sed -i 's/GEMINI_API_KEY=apikey/GEMINI_API_KEY=<your gemini api key>/g' envs.sh
+source envs.sh
+
+```
+
+### Use local LLM via ollama as backend
+
+``` bash
+
+ #edit envs.sh
+vim envs.sh
+export LLM_BACKEND=ollama
+export LLM_MODEL_NAME=llama2
+# export GEMINI_API_KEY=apikey
+export LLM_TEMPERATURE=0.8
+# groq api use this environment variable
+# export OPENAI_API_KEY=apikey
+
+source envs.sh
+
+```
+
+### Use Groq models as backend
+
+``` bash
+
+# edit envs.sh
+vim envs.sh
+export LLM_BACKEND=groq
+export LLM_MODEL_NAME=llama3-8b-8192
+# export GEMINI_API_KEY=apikey
+export LLM_TEMPERATURE=0.8
+# groq api use this environment variable
+export OPENAI_API_KEY=<your groq api key>
+
+
+source envs.sh
+
+```
+
 
 ## Feature List
 
