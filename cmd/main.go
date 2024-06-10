@@ -10,6 +10,7 @@ import (
 	"nuwa-engineer/pkg/cmdexe"
 	"nuwa-engineer/pkg/llms"
 	"nuwa-engineer/pkg/llms/gemini"
+	"nuwa-engineer/pkg/llms/groq"
 	"nuwa-engineer/pkg/llms/ollama"
 	"nuwa-engineer/pkg/parser"
 	"nuwa-engineer/pkg/prompts"
@@ -75,6 +76,11 @@ func GenerateContent(ctx context.Context, prompt string) (string, error) {
 
 	case "ollama":
 		model, err = ollama.NewOllama(ctx, modelName, modeTemperature)
+		if err != nil {
+			return "", fmt.Errorf("failed to create model: %w", err)
+		}
+	case "groq":
+		model, err = groq.NewGroq(ctx, modelName, modeTemperature)
 		if err != nil {
 			return "", fmt.Errorf("failed to create model: %w", err)
 		}
