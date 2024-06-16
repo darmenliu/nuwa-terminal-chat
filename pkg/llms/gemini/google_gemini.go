@@ -56,6 +56,12 @@ func (g *Gemini) GenerateContent(ctx context.Context, prompt string) (string, er
 	return g.ContentToString(resp.Candidates[0].Content), nil
 }
 
+// Chat with the model.
+func (g *Gemini) Chat(ctx context.Context, messages []string) (string, error) {
+	// TODO chat with AI model
+	return "", nil
+}
+
 // Close the client.
 func (g *Gemini) CloseBackend() error {
 	return g.Client.Close()

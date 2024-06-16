@@ -47,6 +47,11 @@ func (o *Groq) GenerateContent(ctx context.Context, prompt string) (string, erro
 	return completion, nil
 }
 
+func (o *Groq) Chat(ctx context.Context, messages []string) (string, error) {
+	// TODO chat with AI model
+	return "", nil
+}
+
 func (o *Groq) CloseBackend() error {
 	return nil
 }

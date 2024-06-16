@@ -43,6 +43,11 @@ func (o *Ollama) GenerateContent(ctx context.Context, prompt string) (string, er
 	return completion, nil
 }
 
+func (o *Ollama) Chat(ctx context.Context, messages []string) (string, error) {
+	// TODO chat with AI model
+	return "", nil
+}
+
 func (o *Ollama) CloseBackend() error {
 	return nil
 }
