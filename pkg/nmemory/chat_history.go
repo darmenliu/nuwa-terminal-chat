@@ -16,7 +16,7 @@ func NewChatHistory() *ChatHistory {
 }
 
 func (h *ChatHistory) Messages(_ context.Context) ([]llms.ChatMessage, error) {
-	return h.history.Messages()
+	return h.history.Messages(_)
 }
 
 func (h *ChatHistory) AddAIMessage(_ context.Context, text string) error {

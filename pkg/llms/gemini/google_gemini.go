@@ -3,22 +3,38 @@ package gemini
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 
 	"nuwa-engineer/pkg/llms"
 
 	"github.com/google/generative-ai-go/genai"
+	lcllms "github.com/tmc/langchaingo/llms"
+	"github.com/tmc/langchaingo/llms/googleai"
 	"google.golang.org/api/option"
 )
 
 // Gemini is a wrapper around the Gemini API.
 type Gemini struct {
-	Client *genai.Client
-	Model  *genai.GenerativeModel
+	Client      *genai.Client
+	Model       *genai.GenerativeModel
+	google      *googleai.GoogleAI
+	chatHistory []lcllms.MessageContent
 }
 
 // NewGemini returns a new Gemini client.
 func NewGemini(ctx context.Context, modelName string) (llms.Model, error) {
+
+	genaiKey := os.Getenv("GEMINI_API_KEY")
+	if genaiKey == "" {
+		return nil, fmt.Errorf("GEMINI_API_KEY is not set")
+	}
+
+	llm, err := googleai.New(ctx, googleai.WithAPIKey(genaiKey))
+	if err != nil {
+		return nil, fmt.Errorf("Failed to create GoogleAI client: %w", err)
+	}
+
 	// Access your API key as an environment variable (see "Set up your API key" above)
 	client, err := genai.NewClient(ctx, option.WithAPIKey(os.Getenv("GEMINI_API_KEY")))
 	if err != nil {
@@ -30,6 +46,7 @@ func NewGemini(ctx context.Context, modelName string) (llms.Model, error) {
 	return &Gemini{
 		Client: client,
 		Model:  model,
+		google: llm,
 	}, nil
 }
 
@@ -57,9 +74,21 @@ func (g *Gemini) GenerateContent(ctx context.Context, prompt string) (string, er
 }
 
 // Chat with the model.
-func (g *Gemini) Chat(ctx context.Context, messages []string) (string, error) {
-	// TODO chat with AI model
-	return "", nil
+func (g *Gemini) Chat(ctx context.Context, message string) (string, error) {
+
+	// Add the message to the chat history
+	g.chatHistory = append(g.chatHistory, lcllms.TextParts(lcllms.ChatMessageTypeHuman, message))
+	resp, err := g.google.GenerateContent(ctx, g.chatHistory)
+	if err != nil {
+		log.Fatal(err)
+		return "", fmt.Errorf("Failed to generate content: %w", err)
+	}
+
+	// Add the assistant's response to the chat history
+	respchoice := resp.Choices[0]
+	assistantResponse := lcllms.TextParts(lcllms.ChatMessageTypeAI, respchoice.Content)
+	g.chatHistory = append(g.chatHistory, assistantResponse)
+	return respchoice.Content, nil
 }
 
 // Close the client.

@@ -9,7 +9,7 @@ type Model interface {
 	GenerateContent(ctx context.Context, prompt string) (string, error)
 
 	// Chat with the model.
-	Chat(ctx context.Context, messages []string) (string, error)
+	Chat(ctx context.Context, messages string) (string, error)
 
 	// Close the client.
 	CloseBackend() error
