@@ -96,6 +96,46 @@ func GenerateContent(ctx context.Context, prompt string) (string, error) {
 	return resp, nil
 }
 
+func Chat(ctx context.Context, message string) (string, error) {
+	llmBackend := os.Getenv("LLM_BACKEND")
+	modelName := os.Getenv("LLM_MODEL_NAME")
+	modeTemperature, err := strconv.ParseFloat(os.Getenv("LLM_TEMPERATURE"), 64)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse LLM_TEMPERATURE: %w", err)
+	}
+	if llmBackend == "" {
+		llmBackend = "gemini"
+		modelName = "gemini-1.5-pro"
+	}
+	var model llms.Model
+	switch llmBackend {
+	case "gemini":
+		model, err = gemini.NewGemini(ctx, modelName)
+		if err != nil {
+			return "", fmt.Errorf("failed to create model: %w", err)
+		}
+	case "ollama":
+		model, err = ollama.NewOllama(ctx, modelName, modeTemperature)
+		if err != nil {
+			return "", fmt.Errorf("failed to create model: %w", err)
+		}
+	case "groq":
+		model, err = groq.NewGroq(ctx, modelName, modeTemperature)
+		if err != nil {
+			return "", fmt.Errorf("failed to create model: %w", err)
+		}
+	default:
+		return "", fmt.Errorf("unknown LLM backend: %s", llmBackend)
+	}
+	defer model.CloseBackend()
+
+	resp, err := model.Chat(ctx, message)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate content: %w", err)
+	}
+	return resp, nil
+}
+
 func FailureExit() {
 	os.Exit(1)
 }
@@ -145,6 +185,16 @@ func executor(in string) {
 	logger.Info("NUWA TERMINAL: " + prompt)
 
 	ctx := context.Background()
+	if CurrentMode == ChatMode {
+		rsp, err := Chat(ctx, prompt)
+		if err != nil {
+			logger.Error("NUWA TERMINAL: failed to generate content,", logger.Args("err", err.Error()))
+			return
+		}
+		fmt.Println("NUWA: " + rsp)
+		return
+	}
+
 	rsp, err := GenerateContent(ctx, prompt)
 	if err != nil {
 		logger.Error("NUWA TERMINAL: failed to generate content,", logger.Args("err", err.Error()))
