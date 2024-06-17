@@ -179,7 +179,9 @@ github.com/stretchr/testify/assert
 ## explicit; go 1.22.0
 github.com/tmc/langchaingo/callbacks
 github.com/tmc/langchaingo/internal/mongodb
+github.com/tmc/langchaingo/internal/util
 github.com/tmc/langchaingo/llms
+github.com/tmc/langchaingo/llms/googleai
 github.com/tmc/langchaingo/llms/ollama
 github.com/tmc/langchaingo/llms/ollama/internal/ollamaclient
 github.com/tmc/langchaingo/llms/openai
