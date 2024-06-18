@@ -184,6 +184,9 @@ func executor(in string) {
 
 	logger.Info("NUWA TERMINAL: " + prompt)
 
+	// Add Suggest
+	AddSuggest(in, "")
+
 	ctx := context.Background()
 	if CurrentMode == ChatMode {
 		rsp, err := Chat(ctx, prompt)
@@ -267,16 +270,6 @@ func executor(in string) {
 		logger.Info("NUWA TERMINAL: script file removed")
 	}
 
-}
-
-func completer(in goterm.Document) []goterm.Suggest {
-	s := []goterm.Suggest{
-		{Text: "chatmode", Description: "Set terminal as a pure chat robot mode"},
-		{Text: "cmdmode", Description: "Set terminal as a command mode, use natural language to communicate"},
-		{Text: "taskmode", Description: "Set terminal as a task mode, use natural language to communicate to execute tasks"},
-		{Text: "exit", Description: "Exit the terminal"},
-	}
-	return goterm.FilterHasPrefix(s, in.GetWordBeforeCursor(), true)
 }
 
 func main() {
