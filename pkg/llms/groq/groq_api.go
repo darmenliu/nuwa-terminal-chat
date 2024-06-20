@@ -13,6 +13,7 @@ import (
 type Groq struct {
 	Client      *openai.LLM
 	Temperature float64
+	SystemPrompt string
 }
 
 func NewGroq(ctx context.Context, model string, temperature float64) (nuwaLLM.Model, error) {
@@ -26,6 +27,7 @@ func NewGroq(ctx context.Context, model string, temperature float64) (nuwaLLM.Mo
 	return &Groq{
 		Client:      llm,
 		Temperature: temperature,
+		SystemPrompt: "",
 	}, nil
 }
 
@@ -50,6 +52,11 @@ func (o *Groq) GenerateContent(ctx context.Context, prompt string) (string, erro
 func (o *Groq) Chat(ctx context.Context, message string) (string, error) {
 	// TODO chat with AI model
 	return "", nil
+}
+
+func (o *Groq) SetSystemPrompt(ctx context.Context, prompt string) error {
+	o.SystemPrompt = prompt
+	return nil
 }
 
 func (o *Groq) CloseBackend() error {

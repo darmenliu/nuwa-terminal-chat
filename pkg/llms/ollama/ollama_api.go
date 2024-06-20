@@ -13,6 +13,7 @@ import (
 type Ollama struct {
 	Client      *ollama.LLM
 	Temperature float64
+	SystemPrompt string
 }
 
 func NewOllama(ctx context.Context, model string, temperature float64) (nuwaLLM.Model, error) {
@@ -25,6 +26,7 @@ func NewOllama(ctx context.Context, model string, temperature float64) (nuwaLLM.
 	return &Ollama{
 		Client:      llm,
 		Temperature: temperature,
+		SystemPrompt: "",
 	}, nil
 }
 
@@ -46,6 +48,11 @@ func (o *Ollama) GenerateContent(ctx context.Context, prompt string) (string, er
 func (o *Ollama) Chat(ctx context.Context, message string) (string, error) {
 	// TODO chat with AI model
 	return "", nil
+}
+
+func (o *Ollama) SetSystemPrompt(ctx context.Context, prompt string) error {
+	o.SystemPrompt = prompt
+	return nil
 }
 
 func (o *Ollama) CloseBackend() error {

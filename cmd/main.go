@@ -96,7 +96,7 @@ func GenerateContent(ctx context.Context, prompt string) (string, error) {
 	return resp, nil
 }
 
-func Chat(ctx context.Context, message string) (string, error) {
+func Chat(ctx context.Context, message string, sysPrompt string) (string, error) {
 	llmBackend := os.Getenv("LLM_BACKEND")
 	modelName := os.Getenv("LLM_MODEL_NAME")
 	modeTemperature, err := strconv.ParseFloat(os.Getenv("LLM_TEMPERATURE"), 64)
@@ -128,7 +128,7 @@ func Chat(ctx context.Context, message string) (string, error) {
 		return "", fmt.Errorf("unknown LLM backend: %s", llmBackend)
 	}
 	defer model.CloseBackend()
-
+	model.SetSystemPrompt(ctx, sysPrompt)
 	resp, err := model.Chat(ctx, message)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate content: %w", err)
@@ -182,14 +182,14 @@ func executor(in string) {
 
 	prompt := GetPromptAccordingToCurrentMode(CurrentMode, in)
 
-	logger.Info("NUWA TERMINAL: " + prompt)
-
 	// Add Suggest
 	AddSuggest(in, "")
 
 	ctx := context.Background()
 	if CurrentMode == ChatMode {
-		rsp, err := Chat(ctx, prompt)
+		sysPrompt := GetSysPromptAccordingMode(CurrentMode)
+
+		rsp, err := Chat(ctx, in, sysPrompt)
 		if err != nil {
 			logger.Error("NUWA TERMINAL: failed to generate content,", logger.Args("err", err.Error()))
 			return

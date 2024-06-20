@@ -3,7 +3,6 @@ package gemini
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 
 	"nuwa-engineer/pkg/llms"
@@ -20,6 +19,7 @@ type Gemini struct {
 	Model       *genai.GenerativeModel
 	google      *googleai.GoogleAI
 	chatHistory []lcllms.MessageContent
+	SystemPrompt string
 }
 
 // NewGemini returns a new Gemini client.
@@ -47,6 +47,7 @@ func NewGemini(ctx context.Context, modelName string) (llms.Model, error) {
 		Client: client,
 		Model:  model,
 		google: llm,
+		SystemPrompt: "",
 	}, nil
 }
 
@@ -77,10 +78,10 @@ func (g *Gemini) GenerateContent(ctx context.Context, prompt string) (string, er
 func (g *Gemini) Chat(ctx context.Context, message string) (string, error) {
 
 	// Add the message to the chat history
-	g.chatHistory = append(g.chatHistory, lcllms.TextParts(lcllms.ChatMessageTypeHuman, message))
+	prompt := g.SystemPrompt + message
+	g.chatHistory = append(g.chatHistory, lcllms.TextParts(lcllms.ChatMessageTypeHuman, prompt))
 	resp, err := g.google.GenerateContent(ctx, g.chatHistory)
 	if err != nil {
-		log.Fatal(err)
 		return "", fmt.Errorf("Failed to generate content: %w", err)
 	}
 
@@ -89,6 +90,12 @@ func (g *Gemini) Chat(ctx context.Context, message string) (string, error) {
 	assistantResponse := lcllms.TextParts(lcllms.ChatMessageTypeAI, respchoice.Content)
 	g.chatHistory = append(g.chatHistory, assistantResponse)
 	return respchoice.Content, nil
+}
+
+// Set system prompt
+func (g *Gemini) SetSystemPrompt(ctx context.Context, prompt string) error {
+	g.SystemPrompt = prompt
+	return nil
 }
 
 // Close the client.
