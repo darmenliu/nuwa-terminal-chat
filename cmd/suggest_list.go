@@ -12,6 +12,12 @@ var suggests = []goterm.Suggest{
 }
 
 func AddSuggest(text string, description string) {
+	// Check if text not exist in suggests, then add it
+	for _, suggest := range suggests {
+		if suggest.Text == text {
+			return
+		}
+	}
 	suggests = append(suggests, goterm.Suggest{Text: text, Description: description})
 }
 
