@@ -69,7 +69,7 @@ func GenerateContent(ctx context.Context, prompt string) (string, error) {
 	var model llms.Model
 	switch llmBackend {
 	case "gemini":
-		model, err = gemini.NewGemini(ctx, modelName)
+		model, err = gemini.NewGemini(ctx, modelName, prompts.GetChatModePrompt())
 		if err != nil {
 			return "", fmt.Errorf("failed to create model: %w", err)
 		}
@@ -110,7 +110,7 @@ func Chat(ctx context.Context, message string, sysPrompt string) (string, error)
 	var model llms.Model
 	switch llmBackend {
 	case "gemini":
-		model, err = gemini.NewGemini(ctx, modelName)
+		model, err = gemini.NewGemini(ctx, modelName, sysPrompt)
 		if err != nil {
 			return "", fmt.Errorf("failed to create model: %w", err)
 		}

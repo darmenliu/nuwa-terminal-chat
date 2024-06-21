@@ -23,14 +23,14 @@ type Gemini struct {
 }
 
 // NewGemini returns a new Gemini client.
-func NewGemini(ctx context.Context, modelName string) (llms.Model, error) {
+func NewGemini(ctx context.Context, modelName string, systemPrompt string) (llms.Model, error) {
 
 	genaiKey := os.Getenv("GEMINI_API_KEY")
 	if genaiKey == "" {
 		return nil, fmt.Errorf("GEMINI_API_KEY is not set")
 	}
 
-	llm, err := googleai.New(ctx, googleai.WithAPIKey(genaiKey))
+	llm, err := googleai.New(ctx, googleai.WithAPIKey(genaiKey), googleai.WithDefaultModel(modelName))
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create GoogleAI client: %w", err)
 	}
@@ -43,11 +43,20 @@ func NewGemini(ctx context.Context, modelName string) (llms.Model, error) {
 
 	model := client.GenerativeModel(modelName)
 
+	model.SystemInstruction = &genai.Content{
+		Parts: []genai.Part{genai.Text(systemPrompt)},
+	}
+
+	content := []lcllms.MessageContent{
+		lcllms.TextParts(lcllms.ChatMessageTypeSystem, systemPrompt),
+	}
+
 	return &Gemini{
 		Client: client,
 		Model:  model,
 		google: llm,
-		SystemPrompt: "",
+		chatHistory: content,
+		SystemPrompt: systemPrompt,
 	}, nil
 }
 
@@ -78,8 +87,9 @@ func (g *Gemini) GenerateContent(ctx context.Context, prompt string) (string, er
 func (g *Gemini) Chat(ctx context.Context, message string) (string, error) {
 
 	// Add the message to the chat history
-	prompt := g.SystemPrompt + message
-	g.chatHistory = append(g.chatHistory, lcllms.TextParts(lcllms.ChatMessageTypeHuman, prompt))
+	//prompt := g.SystemPrompt + message
+	g.chatHistory = append(g.chatHistory, lcllms.TextParts(lcllms.ChatMessageTypeHuman, message))
+
 	resp, err := g.google.GenerateContent(ctx, g.chatHistory)
 	if err != nil {
 		return "", fmt.Errorf("Failed to generate content: %w", err)
