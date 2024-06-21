@@ -13,12 +13,17 @@ atomicgo.dev/schedule
 ## explicit; go 1.19
 cloud.google.com/go
 cloud.google.com/go/civil
-# cloud.google.com/go/ai v0.5.0
-## explicit; go 1.19
+# cloud.google.com/go/ai v0.6.0
+## explicit; go 1.20
 cloud.google.com/go/ai/generativelanguage/apiv1beta
 cloud.google.com/go/ai/generativelanguage/apiv1beta/generativelanguagepb
 cloud.google.com/go/ai/internal
-# cloud.google.com/go/auth v0.4.0
+# cloud.google.com/go/aiplatform v1.67.0
+## explicit; go 1.19
+cloud.google.com/go/aiplatform/apiv1beta1
+cloud.google.com/go/aiplatform/apiv1beta1/aiplatformpb
+cloud.google.com/go/aiplatform/internal
+# cloud.google.com/go/auth v0.4.1
 ## explicit; go 1.19
 cloud.google.com/go/auth
 cloud.google.com/go/auth/credentials
@@ -40,11 +45,19 @@ cloud.google.com/go/auth/oauth2adapt
 # cloud.google.com/go/compute/metadata v0.3.0
 ## explicit; go 1.19
 cloud.google.com/go/compute/metadata
+# cloud.google.com/go/iam v1.1.7
+## explicit; go 1.19
+cloud.google.com/go/iam/apiv1/iampb
 # cloud.google.com/go/longrunning v0.5.7
 ## explicit; go 1.19
 cloud.google.com/go/longrunning
 cloud.google.com/go/longrunning/autogen
 cloud.google.com/go/longrunning/autogen/longrunningpb
+# cloud.google.com/go/vertexai v0.10.0
+## explicit; go 1.20
+cloud.google.com/go/vertexai/genai
+cloud.google.com/go/vertexai/internal
+cloud.google.com/go/vertexai/internal/support
 # github.com/c-bata/go-prompt v0.2.5
 ## explicit; go 1.14
 github.com/c-bata/go-prompt
@@ -78,10 +91,7 @@ github.com/golang/groupcache/lru
 # github.com/golang/protobuf v1.5.4
 ## explicit; go 1.17
 github.com/golang/protobuf/proto
-# github.com/golang/snappy v0.0.4
-## explicit
-github.com/golang/snappy
-# github.com/google/generative-ai-go v0.13.0
+# github.com/google/generative-ai-go v0.14.0
 ## explicit; go 1.21
 github.com/google/generative-ai-go/genai
 github.com/google/generative-ai-go/genai/internal
@@ -128,15 +138,6 @@ github.com/googleapis/gax-go/v2/internal
 # github.com/gookit/color v1.5.4
 ## explicit; go 1.18
 github.com/gookit/color
-# github.com/klauspost/compress v1.17.2
-## explicit; go 1.18
-github.com/klauspost/compress
-github.com/klauspost/compress/fse
-github.com/klauspost/compress/huff0
-github.com/klauspost/compress/internal/cpuinfo
-github.com/klauspost/compress/internal/snapref
-github.com/klauspost/compress/zstd
-github.com/klauspost/compress/zstd/internal/xxhash
 # github.com/lithammer/fuzzysearch v1.1.8
 ## explicit; go 1.15
 github.com/lithammer/fuzzysearch/fuzzy
@@ -152,9 +153,6 @@ github.com/mattn/go-runewidth
 # github.com/mattn/go-tty v0.0.3
 ## explicit; go 1.14
 github.com/mattn/go-tty
-# github.com/montanaflynn/stats v0.0.0-20171201202039-1bf9dbcd8cbe
-## explicit
-github.com/montanaflynn/stats
 # github.com/pkg/term v1.1.0
 ## explicit; go 1.14
 github.com/pkg/term/termios
@@ -175,10 +173,9 @@ github.com/rivo/uniseg
 # github.com/stretchr/testify v1.9.0
 ## explicit; go 1.17
 github.com/stretchr/testify/assert
-# github.com/tmc/langchaingo v0.1.10
+# github.com/tmc/langchaingo v0.1.12
 ## explicit; go 1.22.0
 github.com/tmc/langchaingo/callbacks
-github.com/tmc/langchaingo/internal/mongodb
 github.com/tmc/langchaingo/internal/util
 github.com/tmc/langchaingo/llms
 github.com/tmc/langchaingo/llms/googleai
@@ -188,70 +185,9 @@ github.com/tmc/langchaingo/llms/openai
 github.com/tmc/langchaingo/llms/openai/internal/openaiclient
 github.com/tmc/langchaingo/memory
 github.com/tmc/langchaingo/schema
-# github.com/xdg-go/pbkdf2 v1.0.0
-## explicit; go 1.9
-github.com/xdg-go/pbkdf2
-# github.com/xdg-go/scram v1.1.2
-## explicit; go 1.11
-github.com/xdg-go/scram
-# github.com/xdg-go/stringprep v1.0.4
-## explicit; go 1.11
-github.com/xdg-go/stringprep
 # github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e
 ## explicit; go 1.19
 github.com/xo/terminfo
-# github.com/youmark/pkcs8 v0.0.0-20181117223130-1be2e3e5546d
-## explicit
-github.com/youmark/pkcs8
-# go.mongodb.org/mongo-driver v1.13.1
-## explicit; go 1.13
-go.mongodb.org/mongo-driver/bson
-go.mongodb.org/mongo-driver/bson/bsoncodec
-go.mongodb.org/mongo-driver/bson/bsonoptions
-go.mongodb.org/mongo-driver/bson/bsonrw
-go.mongodb.org/mongo-driver/bson/bsontype
-go.mongodb.org/mongo-driver/bson/primitive
-go.mongodb.org/mongo-driver/event
-go.mongodb.org/mongo-driver/internal/aws
-go.mongodb.org/mongo-driver/internal/aws/awserr
-go.mongodb.org/mongo-driver/internal/aws/credentials
-go.mongodb.org/mongo-driver/internal/aws/signer/v4
-go.mongodb.org/mongo-driver/internal/bsonutil
-go.mongodb.org/mongo-driver/internal/codecutil
-go.mongodb.org/mongo-driver/internal/credproviders
-go.mongodb.org/mongo-driver/internal/csfle
-go.mongodb.org/mongo-driver/internal/csot
-go.mongodb.org/mongo-driver/internal/driverutil
-go.mongodb.org/mongo-driver/internal/handshake
-go.mongodb.org/mongo-driver/internal/httputil
-go.mongodb.org/mongo-driver/internal/logger
-go.mongodb.org/mongo-driver/internal/ptrutil
-go.mongodb.org/mongo-driver/internal/rand
-go.mongodb.org/mongo-driver/internal/randutil
-go.mongodb.org/mongo-driver/internal/uuid
-go.mongodb.org/mongo-driver/mongo
-go.mongodb.org/mongo-driver/mongo/address
-go.mongodb.org/mongo-driver/mongo/description
-go.mongodb.org/mongo-driver/mongo/options
-go.mongodb.org/mongo-driver/mongo/readconcern
-go.mongodb.org/mongo-driver/mongo/readpref
-go.mongodb.org/mongo-driver/mongo/writeconcern
-go.mongodb.org/mongo-driver/tag
-go.mongodb.org/mongo-driver/version
-go.mongodb.org/mongo-driver/x/bsonx/bsoncore
-go.mongodb.org/mongo-driver/x/mongo/driver
-go.mongodb.org/mongo-driver/x/mongo/driver/auth
-go.mongodb.org/mongo-driver/x/mongo/driver/auth/creds
-go.mongodb.org/mongo-driver/x/mongo/driver/auth/internal/gssapi
-go.mongodb.org/mongo-driver/x/mongo/driver/connstring
-go.mongodb.org/mongo-driver/x/mongo/driver/dns
-go.mongodb.org/mongo-driver/x/mongo/driver/mongocrypt
-go.mongodb.org/mongo-driver/x/mongo/driver/mongocrypt/options
-go.mongodb.org/mongo-driver/x/mongo/driver/ocsp
-go.mongodb.org/mongo-driver/x/mongo/driver/operation
-go.mongodb.org/mongo-driver/x/mongo/driver/session
-go.mongodb.org/mongo-driver/x/mongo/driver/topology
-go.mongodb.org/mongo-driver/x/mongo/driver/wiremessage
 # go.opencensus.io v0.24.0
 ## explicit; go 1.13
 go.opencensus.io
@@ -311,8 +247,6 @@ golang.org/x/crypto/cryptobyte/asn1
 golang.org/x/crypto/hkdf
 golang.org/x/crypto/internal/alias
 golang.org/x/crypto/internal/poly1305
-golang.org/x/crypto/ocsp
-golang.org/x/crypto/pbkdf2
 # golang.org/x/net v0.25.0
 ## explicit; go 1.18
 golang.org/x/net/http/httpguts
@@ -335,9 +269,7 @@ golang.org/x/oauth2/jws
 golang.org/x/oauth2/jwt
 # golang.org/x/sync v0.7.0
 ## explicit; go 1.18
-golang.org/x/sync/errgroup
 golang.org/x/sync/semaphore
-golang.org/x/sync/singleflight
 # golang.org/x/sys v0.20.0
 ## explicit; go 1.18
 golang.org/x/sys/cpu
@@ -363,7 +295,7 @@ golang.org/x/text/unicode/norm
 # golang.org/x/time v0.5.0
 ## explicit; go 1.18
 golang.org/x/time/rate
-# google.golang.org/api v0.178.0
+# google.golang.org/api v0.180.0
 ## explicit; go 1.19
 google.golang.org/api/googleapi
 google.golang.org/api/googleapi/transport
@@ -379,17 +311,22 @@ google.golang.org/api/transport/http
 google.golang.org/api/transport/http/internal/propagation
 # google.golang.org/genproto v0.0.0-20240401170217-c3f982113cda
 ## explicit; go 1.19
+google.golang.org/genproto/googleapis/cloud/location
 google.golang.org/genproto/googleapis/type/date
-# google.golang.org/genproto/googleapis/api v0.0.0-20240506185236-b8a5c65736ae
+google.golang.org/genproto/googleapis/type/expr
+google.golang.org/genproto/googleapis/type/interval
+google.golang.org/genproto/googleapis/type/money
+# google.golang.org/genproto/googleapis/api v0.0.0-20240513163218-0867130af1f8
 ## explicit; go 1.19
 google.golang.org/genproto/googleapis/api
 google.golang.org/genproto/googleapis/api/annotations
-# google.golang.org/genproto/googleapis/rpc v0.0.0-20240506185236-b8a5c65736ae
+google.golang.org/genproto/googleapis/api/httpbody
+# google.golang.org/genproto/googleapis/rpc v0.0.0-20240509183442-62759503f434
 ## explicit; go 1.19
 google.golang.org/genproto/googleapis/rpc/code
 google.golang.org/genproto/googleapis/rpc/errdetails
 google.golang.org/genproto/googleapis/rpc/status
-# google.golang.org/grpc v1.63.2
+# google.golang.org/grpc v1.64.0
 ## explicit; go 1.19
 google.golang.org/grpc
 google.golang.org/grpc/attributes
@@ -497,6 +434,7 @@ google.golang.org/protobuf/types/known/emptypb
 google.golang.org/protobuf/types/known/fieldmaskpb
 google.golang.org/protobuf/types/known/structpb
 google.golang.org/protobuf/types/known/timestamppb
+google.golang.org/protobuf/types/known/wrapperspb
 # gopkg.in/yaml.v3 v3.0.1
 ## explicit
 gopkg.in/yaml.v3

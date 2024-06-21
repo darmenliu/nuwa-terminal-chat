@@ -128,6 +128,15 @@ types:
 
     # Types for function calling
     Tool:
+      fields:
+        FunctionDeclarations:
+          doc: |
+            Optional. A list of FunctionDeclarations available to the model that
+            can be used for function calling. The model or system does not execute
+            the function. Instead the defined function may be returned as a [FunctionCall]
+            part with arguments to the client side for execution. The next conversation
+            turn may contain a [FunctionResponse] with the role "function" generation
+            context for the next model turn.
     ToolConfig:
     FunctionDeclaration:
     FunctionCall:
@@ -149,17 +158,22 @@ types:
         FunctionCallingConfig_MODE_UNSPECIFIED: FunctionCallingUnspecified
 
     File:
+      populateToFrom: populateFileTo, populateFileFrom
       fields:
         Uri:
           name: URI
         MimeType:
           name: MIMEType
-        Error:
-          # TODO(jba): support or convert status.Status
-          omit: true
         Metadata:
-          # TODO(jba): support
-          omit: true
+          type: '*FileMetadata'
+          noConvert: true
+          doc: 'Metadata for the File.'
+
+    VideoMetadata:
+      fields:
+        VideoDuration:
+          name: Duration
+
     File_State:
       name: FileState
       docVerb: represents

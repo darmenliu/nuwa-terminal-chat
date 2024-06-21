@@ -18,11 +18,12 @@ package genai
 
 import (
 	"fmt"
+	"time"
 
 	pb "cloud.google.com/go/ai/generativelanguage/apiv1beta/generativelanguagepb"
 	"github.com/google/generative-ai-go/internal/support"
-	"google.golang.org/protobuf/types/known/timestamppb"
-	"time"
+	"github.com/googleapis/gax-go/v2/apierror"
+	"google.golang.org/protobuf/types/known/durationpb"
 )
 
 // BatchEmbedContentsResponse is the response to a `BatchEmbedContentsRequest`.
@@ -345,6 +346,8 @@ func (EmbedContentResponse) fromProto(p *pb.EmbedContentResponse) *EmbedContentR
 
 // File is a file uploaded to the API.
 type File struct {
+	// Metadata for the File.
+	Metadata *FileMetadata
 	// Immutable. Identifier. The `File` resource name. The ID (name excluding the
 	// "files/" prefix) can contain up to 40 characters that are lowercase
 	// alphanumeric or dashes (-). The ID cannot start or end with a dash. If the
@@ -372,31 +375,36 @@ type File struct {
 	URI string
 	// Output only. Processing state of the File.
 	State FileState
+	// Output only. Error status if File processing failed.
+	Error *apierror.APIError
 }
 
 func (v *File) toProto() *pb.File {
 	if v == nil {
 		return nil
 	}
-	return &pb.File{
+	p := &pb.File{
 		Name:           v.Name,
 		DisplayName:    v.DisplayName,
 		MimeType:       v.MIMEType,
 		SizeBytes:      v.SizeBytes,
-		CreateTime:     timestamppb.New(v.CreateTime),
-		UpdateTime:     timestamppb.New(v.UpdateTime),
-		ExpirationTime: timestamppb.New(v.ExpirationTime),
+		CreateTime:     support.TimeToProto(v.CreateTime),
+		UpdateTime:     support.TimeToProto(v.UpdateTime),
+		ExpirationTime: support.TimeToProto(v.ExpirationTime),
 		Sha256Hash:     v.Sha256Hash,
 		Uri:            v.URI,
 		State:          pb.File_State(v.State),
+		Error:          support.APIErrorToProto(v.Error),
 	}
+	populateFileTo(p, v)
+	return p
 }
 
 func (File) fromProto(p *pb.File) *File {
 	if p == nil {
 		return nil
 	}
-	return &File{
+	v := &File{
 		Name:           p.Name,
 		DisplayName:    p.DisplayName,
 		MIMEType:       p.MimeType,
@@ -407,7 +415,10 @@ func (File) fromProto(p *pb.File) *File {
 		Sha256Hash:     p.Sha256Hash,
 		URI:            p.Uri,
 		State:          FileState(p.State),
+		Error:          support.APIErrorFromProto(p.Error),
 	}
+	populateFileFrom(v, p)
+	return v
 }
 
 // FileData is URI based data.
@@ -1240,18 +1251,12 @@ func (v TaskType) String() string {
 // external systems to perform an action, or set of actions, outside of
 // knowledge and scope of the model.
 type Tool struct {
-	// Optional. A list of `FunctionDeclarations` available to the model that can
-	// be used for function calling.
-	//
-	// The model or system does not execute the function. Instead the defined
-	// function may be returned as a [FunctionCall][content.part.function_call]
-	// with arguments to the client side for execution. The model may decide to
-	// call a subset of these functions by populating
-	// [FunctionCall][content.part.function_call] in the response. The next
-	// conversation turn may contain a
-	// [FunctionResponse][content.part.function_response]
-	// with the [content.role] "function" generation context for the next model
-	// turn.
+	// Optional. A list of FunctionDeclarations available to the model that
+	// can be used for function calling. The model or system does not execute
+	// the function. Instead the defined function may be returned as a [FunctionCall]
+	// part with arguments to the client side for execution. The next conversation
+	// turn may contain a [FunctionResponse] with the role "function" generation
+	// context for the next model turn.
 	FunctionDeclarations []*FunctionDeclaration
 }
 
@@ -1365,5 +1370,29 @@ func (UsageMetadata) fromProto(p *pb.GenerateContentResponse_UsageMetadata) *Usa
 		PromptTokenCount:     p.PromptTokenCount,
 		CandidatesTokenCount: p.CandidatesTokenCount,
 		TotalTokenCount:      p.TotalTokenCount,
+	}
+}
+
+// VideoMetadata is metadata for a video `File`.
+type VideoMetadata struct {
+	// Duration of the video.
+	Duration time.Duration
+}
+
+func (v *VideoMetadata) toProto() *pb.VideoMetadata {
+	if v == nil {
+		return nil
+	}
+	return &pb.VideoMetadata{
+		VideoDuration: durationpb.New(v.Duration),
+	}
+}
+
+func (VideoMetadata) fromProto(p *pb.VideoMetadata) *VideoMetadata {
+	if p == nil {
+		return nil
+	}
+	return &VideoMetadata{
+		Duration: support.DurationFromProto(p.VideoDuration),
 	}
 }

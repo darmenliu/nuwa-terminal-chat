@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 
@@ -19,6 +18,14 @@ const (
 )
 
 var ErrContentExclusive = errors.New("only one of Content / MultiContent allowed in message")
+
+type StreamOptions struct {
+	// If set, an additional chunk will be streamed before the data: [DONE] message.
+	// The usage field on this chunk shows the token usage statistics for the entire request,
+	// and the choices field will always be an empty array.
+	// All other chunks will also include a usage field, but with a null value.
+	IncludeUsage bool `json:"include_usage,omitempty"`
+}
 
 // ChatRequest is a request to complete a chat completion..
 type ChatRequest struct {
@@ -50,6 +57,9 @@ type ChatRequest struct {
 	// This can be either a string or a ToolChoice object.
 	// If it is a string, it should be one of 'none', or 'auto', otherwise it should be a ToolChoice object specifying a specific tool to use.
 	ToolChoice any `json:"tool_choice,omitempty"`
+
+	// Options for streaming response. Only set this when you set stream: true.
+	StreamOptions *StreamOptions `json:"stream_options,omitempty"`
 
 	// StreamingFunc is a function to be called for each chunk of a streaming response.
 	// Return an error to stop streaming early.
@@ -266,6 +276,12 @@ type ChatCompletionResponse struct {
 	SystemFingerprint string                  `json:"system_fingerprint"`
 }
 
+type Usage struct {
+	PromptTokens     int `json:"prompt_tokens"`
+	CompletionTokens int `json:"completion_tokens"`
+	TotalTokens      int `json:"total_tokens"`
+}
+
 // StreamedChatResponsePayload is a chunk from the stream.
 type StreamedChatResponsePayload struct {
 	ID      string  `json:"id,omitempty"`
@@ -283,6 +299,12 @@ type StreamedChatResponsePayload struct {
 		} `json:"delta,omitempty"`
 		FinishReason FinishReason `json:"finish_reason,omitempty"`
 	} `json:"choices,omitempty"`
+	SystemFingerprint string `json:"system_fingerprint"`
+	// An optional field that will only be present when you set stream_options: {"include_usage": true} in your request.
+	// When present, it contains a null value except for the last chunk which contains the token usage statistics
+	// for the entire request.
+	Usage *Usage `json:"usage,omitempty"`
+	Error error  `json:"-"` // use for error handling only
 }
 
 // FunctionDefinition is a definition of a function that can be called by the model.
@@ -318,6 +340,9 @@ type FunctionCall struct {
 func (c *Client) createChat(ctx context.Context, payload *ChatRequest) (*ChatCompletionResponse, error) {
 	if payload.StreamingFunc != nil {
 		payload.Stream = true
+		if payload.StreamOptions == nil {
+			payload.StreamOptions = &StreamOptions{IncludeUsage: true}
+		}
 	}
 	// Build request payload
 
@@ -365,7 +390,9 @@ func (c *Client) createChat(ctx context.Context, payload *ChatRequest) (*ChatCom
 	return &response, json.NewDecoder(r.Body).Decode(&response)
 }
 
-func parseStreamingChatResponse(ctx context.Context, r *http.Response, payload *ChatRequest) (*ChatCompletionResponse, error) { //nolint:cyclop,lll
+func parseStreamingChatResponse(ctx context.Context, r *http.Response, payload *ChatRequest) (*ChatCompletionResponse,
+	error,
+) { //nolint:cyclop,lll
 	scanner := bufio.NewScanner(r.Body)
 	responseChan := make(chan StreamedChatResponsePayload)
 	go func() {
@@ -375,29 +402,35 @@ func parseStreamingChatResponse(ctx context.Context, r *http.Response, payload *
 			if line == "" {
 				continue
 			}
-			if !strings.HasPrefix(line, "data:") {
-				log.Fatalf("unexpected line: %v", line)
-			}
-			data := strings.TrimPrefix(line, "data: ")
+
+			data := strings.TrimPrefix(line, "data:") // here use `data:` instead of `data: ` for compatibility
+			data = strings.TrimSpace(data)
 			if data == "[DONE]" {
 				return
 			}
 			var streamPayload StreamedChatResponsePayload
 			err := json.NewDecoder(bytes.NewReader([]byte(data))).Decode(&streamPayload)
 			if err != nil {
-				log.Fatalf("failed to decode stream payload: %v", err)
+				streamPayload.Error = fmt.Errorf("error decoding streaming response: %w", err)
+				responseChan <- streamPayload
+				return
 			}
 			responseChan <- streamPayload
 		}
 		if err := scanner.Err(); err != nil {
-			log.Println("issue scanning response:", err)
+			responseChan <- StreamedChatResponsePayload{Error: fmt.Errorf("error reading streaming response: %w", err)}
+			return
 		}
 	}()
 	// Combine response
 	return combineStreamingChatResponse(ctx, payload, responseChan)
 }
 
-func combineStreamingChatResponse(ctx context.Context, payload *ChatRequest, responseChan chan StreamedChatResponsePayload) (*ChatCompletionResponse, error) {
+func combineStreamingChatResponse(
+	ctx context.Context,
+	payload *ChatRequest,
+	responseChan chan StreamedChatResponsePayload,
+) (*ChatCompletionResponse, error) {
 	response := ChatCompletionResponse{
 		Choices: []*ChatCompletionChoice{
 			{},
@@ -405,6 +438,16 @@ func combineStreamingChatResponse(ctx context.Context, payload *ChatRequest, res
 	}
 
 	for streamResponse := range responseChan {
+		if streamResponse.Error != nil {
+			return nil, streamResponse.Error
+		}
+
+		if streamResponse.Usage != nil {
+			response.Usage.CompletionTokens = streamResponse.Usage.CompletionTokens
+			response.Usage.PromptTokens = streamResponse.Usage.PromptTokens
+			response.Usage.TotalTokens = streamResponse.Usage.TotalTokens
+		}
+
 		if len(streamResponse.Choices) == 0 {
 			continue
 		}
@@ -418,7 +461,8 @@ func combineStreamingChatResponse(ctx context.Context, payload *ChatRequest, res
 		}
 
 		if len(choice.Delta.ToolCalls) > 0 {
-			chunk, response.Choices[0].Message.ToolCalls = updateToolCalls(response.Choices[0].Message.ToolCalls, choice.Delta.ToolCalls)
+			chunk, response.Choices[0].Message.ToolCalls = updateToolCalls(response.Choices[0].Message.ToolCalls,
+				choice.Delta.ToolCalls)
 		}
 
 		if payload.StreamingFunc != nil {
