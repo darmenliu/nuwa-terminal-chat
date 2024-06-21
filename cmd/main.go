@@ -31,6 +31,21 @@ const (
 )
 
 var CurrentMode string = ChatMode
+var CurrentDir string = ""
+
+//Set current directory
+func SetCurrentDir(in string) {
+	CurrentDir = in
+}
+
+func CheckDirChanged(in string) bool {
+	if in == CurrentDir {
+		return false
+	}
+	SetCurrentDir(in)
+	return true
+}
+
 
 // SetCurrentMode sets the current mode to the specified value.
 func SetCurrentMode(in string) {
@@ -185,6 +200,15 @@ func ParseScript(response string) (filename, content string, err error) {
 }
 
 
+var LivePrefixState struct {
+	LivePrefix string
+	IsEnable   bool
+}
+
+func changeLivePrefix() (string, bool) {
+	return LivePrefixState.LivePrefix, LivePrefixState.IsEnable
+}
+
 func executor(in string) {
 	logger := pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
 	fmt.Println("You: " + in)
@@ -246,6 +270,19 @@ func executor(in string) {
 			return
 		}
 		fmt.Println(output)
+
+		// Check if the current directory has changed
+		curDir, err := os.Getwd()
+		if err != nil {
+			logger.Warn("NUWA TERMINAL: failed to get current directory path,", logger.Args("err", err.Error()))
+			return
+		}
+
+		if CheckDirChanged(curDir) {
+			LivePrefixState.LivePrefix = CurrentDir + ">>>"
+			LivePrefixState.IsEnable = true
+		}
+
 	} else if CurrentMode == TaskMode {
 		fmt.Println(rsp)
 		filename, content, err := ParseScript(rsp)
@@ -305,7 +342,7 @@ func main() {
 		Render() // Render the big text to the terminal
 
 	// logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-	// logger := pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
+	logger := pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
 
 	// // Create nuwa-engineer workspace
 	// workspaceManager := NewDefaultWorkSpaceManager()
@@ -318,11 +355,19 @@ func main() {
 	// 		FailureExit()
 	// 	}
 	// }
+
+	//Get current directory path
+	currentDir, err := os.Getwd()
+	if err != nil {
+		logger.Fatal("NUWA TERMINAL: failed to get current directory path,", logger.Args("err", err.Error()))
+	}
+
 	defer fmt.Println("Bye!")
 	p := goterm.New(
 		executor,
 		completer,
-		goterm.OptionPrefix(">>> "),
+		goterm.OptionPrefix( currentDir + ">>> "),
+		goterm.OptionLivePrefix(changeLivePrefix),
 		goterm.OptionTitle("NUWA TERMINAL"),
 	)
 	p.Run()
