@@ -216,7 +216,13 @@ source envs.sh
 ### TODO
 
 - Support local LLMs
+- Claude LLM as backend
 - Support more language like python as task script
+- Support code project as context
+- Support project and explain code
+- Support Anylize logs and explain logs
+- Support system troubleshooting
+- Initialize a spesific language project
 
 
 ## License
