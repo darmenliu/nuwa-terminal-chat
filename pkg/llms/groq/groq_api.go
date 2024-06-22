@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	nuwaLLM "nuwa-engineer/pkg/llms"
+	nuwaLLM "github.com/darmenliu/nuwa-terminal-chat/pkg/llms"
 
 	"github.com/tmc/langchaingo/llms"
 	"github.com/tmc/langchaingo/llms/openai"

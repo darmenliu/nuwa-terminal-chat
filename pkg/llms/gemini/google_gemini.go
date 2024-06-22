@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"nuwa-engineer/pkg/llms"
+	"github.com/darmenliu/nuwa-terminal-chat/pkg/llms"
 
 	"github.com/google/generative-ai-go/genai"
 	lcllms "github.com/tmc/langchaingo/llms"

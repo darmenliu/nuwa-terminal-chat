@@ -1,4 +1,4 @@
-module nuwa-engineer
+module github.com/darmenliu/nuwa-terminal-chat
 
 go 1.22.0
 

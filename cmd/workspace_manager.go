@@ -3,11 +3,12 @@ package main
 import (
 	"fmt"
 	"log/slog"
-	"nuwa-engineer/pkg/dir"
-	nfile "nuwa-engineer/pkg/file"
-	"nuwa-engineer/pkg/workspace"
 	"os"
 	"path/filepath"
+
+	"github.com/darmenliu/nuwa-terminal-chat/pkg/dir"
+	nfile "github.com/darmenliu/nuwa-terminal-chat/pkg/file"
+	"github.com/darmenliu/nuwa-terminal-chat/pkg/workspace"
 )
 
 type WorkSpaceManager interface {
