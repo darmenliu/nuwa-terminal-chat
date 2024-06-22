@@ -18,30 +18,48 @@ sed -i 's/GEMINI_API_KEY=apikey/GEMINI_API_KEY=<your gemini api key>/g' envs.sh
 source envs.sh
 
 # run nuwa-terminal-chat
-./nuwa-terminal
+(base) $ ./nuwa-terminal
 ███    ██ ██    ██ ██     ██  █████      ████████ ███████ ██████  ███    ███ ██ ███    ██  █████  ██
 ████   ██ ██    ██ ██     ██ ██   ██        ██    ██      ██   ██ ████  ████ ██ ████   ██ ██   ██ ██
 ██ ██  ██ ██    ██ ██  █  ██ ███████        ██    █████   ██████  ██ ████ ██ ██ ██ ██  ██ ███████ ██
 ██  ██ ██ ██    ██ ██ ███ ██ ██   ██        ██    ██      ██   ██ ██  ██  ██ ██ ██  ██ ██ ██   ██ ██
 ██   ████  ██████   ███ ███  ██   ██        ██    ███████ ██   ██ ██      ██ ██ ██   ████ ██   ██ ███████
 
->>> who are you?
+/home/bob>>> who are you?
 You: who are you?
-NUWA: I am not a person. I am Gemini, a multimodal AI model, developed by Google.
->>> what can you do for me?
+NUWA: I am NUWA, a terminal chat tool. I can help you with software development by generating code, executing commands, and answering your questions. I have three modes:
+
+* **ChatMode:** For general chat and code generation.
+* **CmdMode:** For executing Linux commands.
+* **TaskMode:** For generating shell scripts and executing Linux commands.
+
+You can switch between modes using these commands: `chatmode`, `cmdmode`, and `taskmode`.
+
+How can I assist you today?
+
+/home/bob>>> what can you do for me?
 You: what can you do for me?
-NUWA: I can help you with a wide range of software development tasks, including:
+NUWA: I'm NUWA, your friendly software engineer chatbot. I can help you with a variety of tasks, including:
 
-- Generating code in multiple programming languages
-- Providing information on software development best practices
-- Answering questions about software development concepts
-- Debugging code
-- Refactoring code
-- Designing software architectures
-- Managing software development projects
-- And much more!
+**ChatMode:**
+* Answer your questions about software development concepts, best practices, and more.
+* Generate code snippets in various programming languages based on your instructions.
 
-Just let me know what you need help with, and I'll do my best to assist you.
+**CmdMode:**
+* Execute Linux commands directly within our chat.
+
+**TaskMode:**
+* Create shell scripts tailored to your needs.
+* Execute Linux commands within the context of a task.
+
+To get started, tell me which mode you'd like to enter:
+* **chatmode** for general software development chat
+* **cmdmode** to run Linux commands
+* **taskmode** for creating and running shell scripts
+
+What would you like to do today?
+
+/home/bob>>>
 
 ```
 
