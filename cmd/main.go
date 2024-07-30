@@ -21,10 +21,11 @@ import (
 )
 
 const (
-	ChatMode = "chatmode"
-	CmdMode  = "cmdmode"
-	TaskMode = "taskmode"
-	Exit     = "exit"
+	ChatMode  = "chatmode"
+	CmdMode   = "cmdmode"
+	TaskMode  = "taskmode"
+	AgentMode = "agentmode"
+	Exit      = "exit"
 
 	Catchdir   = ".nuwa-terminal"
 	ScriptsDir = "scripts"
@@ -33,7 +34,7 @@ const (
 var CurrentMode string = ChatMode
 var CurrentDir string = ""
 
-//Set current directory
+// Set current directory
 func SetCurrentDir(in string) {
 	CurrentDir = in
 }
@@ -45,7 +46,6 @@ func CheckDirChanged(in string) bool {
 	SetCurrentDir(in)
 	return true
 }
-
 
 // SetCurrentMode sets the current mode to the specified value.
 func SetCurrentMode(in string) {
@@ -62,6 +62,8 @@ func GetSysPromptAccordingMode(current string) string {
 		return prompts.GetCmdModePrompt()
 	case TaskMode:
 		return prompts.GetTaskModePrompt()
+	case AgentMode:
+		return ""
 	default:
 		return ""
 	}
@@ -199,7 +201,6 @@ func ParseScript(response string) (filename, content string, err error) {
 	return filename, content, nil
 }
 
-
 var LivePrefixState struct {
 	LivePrefix string
 	IsEnable   bool
@@ -221,7 +222,7 @@ func executor(in string) {
 		os.Exit(0)
 	}
 
-	if (in == ChatMode) || (in == CmdMode) || (in == TaskMode) {
+	if (in == ChatMode) || (in == CmdMode) || (in == TaskMode) || (in == AgentMode) {
 		SetCurrentMode(in)
 		logger.Info("NUWA TERMINAL: Mode is " + CurrentMode)
 		return
@@ -366,7 +367,7 @@ func main() {
 	p := goterm.New(
 		executor,
 		completer,
-		goterm.OptionPrefix( currentDir + ">>> "),
+		goterm.OptionPrefix(currentDir+">>> "),
 		goterm.OptionLivePrefix(changeLivePrefix),
 		goterm.OptionTitle("NUWA TERMINAL"),
 	)
