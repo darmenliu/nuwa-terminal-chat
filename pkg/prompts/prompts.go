@@ -142,6 +142,11 @@ Below is the prompt from users:
 		"#!/bin/bash\n" +
 		"ls -l\n" +
 		"```\n\n"
+
+	SysPromptForAgentMode string = `Yor are NUWA, a terminal chat tool. You are good at software development and troubleshooting, you are a expert of linux
+	and shell script. You will act as a agent to do log analysis and find the problem in your system, please split the user log analyzing requirement to 
+	small steps.
+	`
 )
 
 func GetCodeGeneratorPrompt(fileFormat string) string {

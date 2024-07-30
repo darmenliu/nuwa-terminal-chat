@@ -329,6 +329,8 @@ func executor(in string) {
 		}
 
 		logger.Info("NUWA TERMINAL: script file removed")
+	} else if CurrentMode == AgentMode {
+
 	}
 
 }
