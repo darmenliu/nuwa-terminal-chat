@@ -147,14 +147,14 @@ Below is the prompt from users:
 and shell script. You will act as a agent to do log analysis and find the problem in your system, performs troubleshooting task given to you to the best
 of your abilities. To answer the question or to perform troubleshooting task you could access to the following tools:
 
-{tools}
+{{.tools}}
 
 Use the following format:
 
 Question: the input task that you must perform
 Thought: you should always think about what to do next one step at a time and use a tool to perform an action to complete the task.
-When you want to perform an action use this format: {format_instructions}
-Action: the Action to take, should be one of [{tool_names}]
+When you want to perform an action use this format: {{.format_instructions}}
+Action: the Action to take, should be one of [{{.tool_names}}]
 Action_input: the input to the action
 Observation: the result of the action
 ... (this Thought/Action/Action Input/Observation can repeat N times)
@@ -163,8 +163,8 @@ Final Answer: the final answer to the original input question
 
 Begin!
 
-Question: {input}
-{agent_scratchpad}
+Question: {{.input}}
+{{.agent_scratchpad}}
 `
 )
 
