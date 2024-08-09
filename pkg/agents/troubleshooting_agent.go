@@ -50,7 +50,7 @@ func NewTroubleshootingAgent(llm llms.Model, tools []tools.Tool, outputkey strin
 	}
 }
 
-func CreateTroubleshootingAgentPrompt(tools []tools.Tool) string {
+func CreateTroubleshootingAgentPrompt(tools []tools.Tool) prompts.PromptTemplate {
 	return prompts.PromptTemplate{
 		Template:       nuwaprmp.SysPromptForAgentMode,
 		TemplateFormat: prompts.TemplateFormatGoTemplate,
@@ -85,7 +85,7 @@ func toolDescriptions(tools []tools.Tool) string {
 }
 
 // Plan decides what action to take or returns the final result of the input.
-func (a *TroubleshootingAgent) Plan(
+func (tbs *TroubleshootingAgent) Plan(
 	ctx context.Context,
 	intermediateSteps []schema.AgentStep,
 	inputs map[string]string,
@@ -99,16 +99,16 @@ func (a *TroubleshootingAgent) Plan(
 
 	var stream func(ctx context.Context, chunk []byte) error
 
-	if a.CallbacksHandler != nil {
+	if tbs.CallbacksHandler != nil {
 		stream = func(ctx context.Context, chunk []byte) error {
-			a.CallbacksHandler.HandleStreamingFunc(ctx, chunk)
+			tbs.CallbacksHandler.HandleStreamingFunc(ctx, chunk)
 			return nil
 		}
 	}
 
 	output, err := chains.Predict(
 		ctx,
-		a.Chain,
+		tbs.Chain,
 		fullInputs,
 		chains.WithStopWords([]string{"\nObservation:", "\n\tObservation:"}),
 		chains.WithStreamingFunc(stream),
@@ -117,11 +117,11 @@ func (a *TroubleshootingAgent) Plan(
 		return nil, nil, err
 	}
 
-	return a.parseOutput(output)
+	return tbs.parseOutput(output)
 }
 
-func (a *TroubleshootingAgent) GetInputKeys() []string {
-	chainInputs := a.Chain.GetInputKeys()
+func (tbs *TroubleshootingAgent) GetInputKeys() []string {
+	chainInputs := tbs.Chain.GetInputKeys()
 
 	// Remove inputs given in plan.
 	agentInput := make([]string, 0, len(chainInputs))
@@ -135,12 +135,12 @@ func (a *TroubleshootingAgent) GetInputKeys() []string {
 	return agentInput
 }
 
-func (a *TroubleshootingAgent) GetOutputKeys() []string {
-	return []string{a.OutputKey}
+func (tbs *TroubleshootingAgent) GetOutputKeys() []string {
+	return []string{tbs.OutputKey}
 }
 
-func (a *TroubleshootingAgent) GetTools() []tools.Tool {
-	return a.Tools
+func (tbs *TroubleshootingAgent) GetTools() []tools.Tool {
+	return tbs.Tools
 }
 
 func constructScratchPad(steps []schema.AgentStep) string {
@@ -156,13 +156,13 @@ func constructScratchPad(steps []schema.AgentStep) string {
 	return scratchPad
 }
 
-func (a *TroubleshootingAgent) parseOutput(output string) ([]schema.AgentAction, *schema.AgentFinish, error) {
+func (tbs *TroubleshootingAgent) parseOutput(output string) ([]schema.AgentAction, *schema.AgentFinish, error) {
 	if strings.Contains(output, _troubleshootingFinalAnswerAction) {
 		splits := strings.Split(output, _troubleshootingFinalAnswerAction)
 
 		finishAction := &schema.AgentFinish{
 			ReturnValues: map[string]any{
-				a.OutputKey: splits[len(splits)-1],
+				tbs.OutputKey: splits[len(splits)-1],
 			},
 			Log: output,
 		}
