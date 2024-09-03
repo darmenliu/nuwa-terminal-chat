@@ -156,8 +156,15 @@ Use the following format:
 
 Question: the input task that you must perform
 Thought: you should always think about what to do next one step at a time and use a script to perform an action to complete the task.
-When you want to perform an action use this format: {{.format_instructions}}
-Action: the Action to take, should execute the script you have created
+Generate the script like below format:
+
+{{.ShellScriptFormat}}
+
+for example:
+
+{{.ShellExample}}
+
+Action: the Action to take, should execute the script you have created with the {{.tools}}.
 Action_input: the input to the action
 Observation: the result of the action
 ... (this Thought/Action/Action Input/Observation can repeat N times)

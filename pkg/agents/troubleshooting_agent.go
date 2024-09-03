@@ -56,23 +56,12 @@ func CreateTroubleshootingAgentPrompt(tools []tools.Tool) prompts.PromptTemplate
 		TemplateFormat: prompts.TemplateFormatGoTemplate,
 		InputVariables: []string{"input", "agent_scratchpad"},
 		PartialVariables: map[string]any{
-			"tool_names":        toolNames(tools),
-			"tool_descriptions": toolDescriptions(tools),
+			"tools":        toolDescriptions(tools),
+			"ShellScriptFormat": nuwaprmp.ShellScriptFormat,
+			"ShellExample": 	nuwaprmp.ShellExample,
 			"history":           "",
 		},
 	}
-}
-
-func toolNames(tools []tools.Tool) string {
-	var tn strings.Builder
-	for i, tool := range tools {
-		if i > 0 {
-			tn.WriteString(", ")
-		}
-		tn.WriteString(tool.Name())
-	}
-
-	return tn.String()
 }
 
 func toolDescriptions(tools []tools.Tool) string {
