@@ -33,10 +33,10 @@ func (e *ScriptCodeParser) Name() string {
 }
 
 func (e *ScriptCodeParser) Call(ctx context.Context, input string) (string, error) {
-	return e.parseScriptAndSave(input)
+	return e.ParseScriptAndSave(input)
 }
 
-func (e *ScriptCodeParser) parseScriptAndSave(input string) (string, error) {
+func (e *ScriptCodeParser) ParseScriptAndSave(input string) (string, error) {
 	filename, content, err := ParseScript(input)
 	if err != nil {
 		return "", err
