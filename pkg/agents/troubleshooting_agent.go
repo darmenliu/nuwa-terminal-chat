@@ -34,7 +34,7 @@ type TroubleshootingAgent struct {
 }
 
 const (
-	_troubleshootingFinalAnswerAction = "NUWA:"
+	_troubleshootingFinalAnswerAction = "Final Answer:"
 )
 
 func NewTroubleshootingAgent(llm llms.Model, tools []tools.Tool, outputkey string, callback callbacks.Handler) *TroubleshootingAgent {

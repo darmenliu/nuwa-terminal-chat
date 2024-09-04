@@ -164,9 +164,12 @@ for example:
 
 {{.ShellExample}}
 
-Action: the Action to take, should execute the script you have created with the {{.tools}}.
-Action_input: the input to the action
-Observation: the result of the action
+Action: the Action is to execute the script with the {{.tools}}.
+Action_input: the script content generate by you with the format:
+
+{{.ShellScriptFormat}}
+
+Observation: the output of the action from the script.
 ... (this Thought/Action/Action Input/Observation can repeat N times)
 Thought: I now know the final answer
 Final Answer: the final answer to the original input question
