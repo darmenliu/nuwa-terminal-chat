@@ -2,11 +2,13 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
 
+	"github.com/darmenliu/nuwa-terminal-chat/pkg/agents"
 	"github.com/darmenliu/nuwa-terminal-chat/pkg/cmdexe"
 	"github.com/darmenliu/nuwa-terminal-chat/pkg/llms"
 	"github.com/darmenliu/nuwa-terminal-chat/pkg/llms/gemini"
@@ -18,6 +20,13 @@ import (
 	goterm "github.com/c-bata/go-prompt"
 	"github.com/pterm/pterm"
 	"github.com/pterm/pterm/putils"
+	lcagents "github.com/tmc/langchaingo/agents"
+	"github.com/tmc/langchaingo/chains"
+	lcllms "github.com/tmc/langchaingo/llms"
+	"github.com/tmc/langchaingo/llms/googleai"
+	lcollama "github.com/tmc/langchaingo/llms/ollama"
+	"github.com/tmc/langchaingo/llms/openai"
+	"github.com/tmc/langchaingo/tools"
 )
 
 const (
@@ -72,6 +81,55 @@ func GetSysPromptAccordingMode(current string) string {
 func GetPromptAccordingToCurrentMode(current string, in string) string {
 	sysPrompt := GetSysPromptAccordingMode(current)
 	return sysPrompt + "\n" + in
+}
+
+func GetLLMBackend(ctx context.Context) (lcllms.Model, error) {
+	logger := pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
+	llmBackend := os.Getenv("LLM_BACKEND")
+	modelName := os.Getenv("LLM_MODEL_NAME")
+
+	if llmBackend == "" {
+		llmBackend = "gemini"
+		modelName = "gemini-1.5-pro"
+	}
+	var model lcllms.Model
+	var err error
+	switch llmBackend {
+	case "gemini":
+		apiKey := os.Getenv("GEMINI_API_KEY")
+		if apiKey == "" {
+			logger.Error("GEMINI_API_KEY is not set")
+			return nil, errors.New("GEMINI_API_KEY is not set")
+		}
+
+		model, err = googleai.New(ctx, googleai.WithAPIKey(apiKey), googleai.WithDefaultModel(modelName))
+		if err != nil {
+			logger.Error("failed to create GoogleAI client, error:", logger.Args("err", err.Error()))
+			return nil, err
+		}
+	case "ollama":
+		model, err = lcollama.New(lcollama.WithModel(modelName))
+		if err != nil {
+			logger.Error("failed to create Ollama client, error:", logger.Args("err", err.Error()))
+			return nil, err
+		}
+	case "groq":
+		apiKey := os.Getenv("GROQ_API_KEY")
+
+		model, err = openai.New(
+			openai.WithModel("llama3-8b-8192"),
+			openai.WithBaseURL("https://api.groq.com/openai/v1"),
+			openai.WithToken(apiKey),
+		)
+		if err != nil {
+			logger.Error("failed to create OpenAI client of groq, error:", logger.Args("err", err.Error()))
+			return nil, err
+		}
+	default:
+		return nil, fmt.Errorf("unknown LLM backend: %s", llmBackend)
+	}
+
+	return model, nil
 }
 
 // GenerateContent generates content using the specified prompt.
@@ -330,7 +388,24 @@ func executor(in string) {
 
 		logger.Info("NUWA TERMINAL: script file removed")
 	} else if CurrentMode == AgentMode {
+		llm, err := GetLLMBackend(ctx)
+		if err != nil {
+			logger.Error("NUWA TERMINAL: failed to get LLM backend,", logger.Args("err", err.Error()))
+			return
+		}
 
+		agentTools := []tools.Tool{
+			&agents.ScriptExecutor{},
+		}
+
+		agent := agents.NewTroubleshootingAgent(llm, agentTools, "output", nil)
+		executor := lcagents.NewExecutor(agent)
+		answer, err := chains.Run(context.Background(), executor, in)
+		if err != nil {
+			logger.Error("NUWA TERMINAL: failed to run agent,", logger.Args("err", err.Error()))
+			return
+		}
+		fmt.Println("NUWA: " + answer)
 	}
 
 }

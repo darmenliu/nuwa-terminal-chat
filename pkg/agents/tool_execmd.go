@@ -9,7 +9,6 @@ import (
 )
 
 type ScriptExecutor struct {
-
 }
 
 var _ tools.Tool = &ScriptExecutor{}
