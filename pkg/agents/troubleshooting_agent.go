@@ -9,6 +9,7 @@ import (
 	"time"
 
 	nuwaprmp "github.com/darmenliu/nuwa-terminal-chat/pkg/prompts"
+	"github.com/pterm/pterm"
 
 	"github.com/tmc/langchaingo/agents"
 	"github.com/tmc/langchaingo/callbacks"
@@ -148,26 +149,35 @@ func constructScratchPad(steps []schema.AgentStep) string {
 }
 
 func (tbs *TroubleshootingAgent) parseOutput(output string) ([]schema.AgentAction, *schema.AgentFinish, error) {
-	if strings.Contains(output, _troubleshootingFinalAnswerAction) {
-		splits := strings.Split(output, _troubleshootingFinalAnswerAction)
+    logger := pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
+    if strings.Contains(output, _troubleshootingFinalAnswerAction) {
+        splits := strings.Split(output, _troubleshootingFinalAnswerAction)
 
-		finishAction := &schema.AgentFinish{
-			ReturnValues: map[string]any{
-				tbs.OutputKey: splits[len(splits)-1],
-			},
-			Log: output,
-		}
+        finishAction := &schema.AgentFinish{
+            ReturnValues: map[string]any{
+                tbs.OutputKey: splits[len(splits)-1],
+            },
+            Log: output,
+        }
 
-		return nil, finishAction, nil
-	}
+        return nil, finishAction, nil
+    }
 
-	r := regexp.MustCompile(`Action: (.*?)[\n]*Action Input: (.*)`)
-	matches := r.FindStringSubmatch(output)
-	if len(matches) == 0 {
-		return nil, nil, fmt.Errorf("%w: %s", agents.ErrUnableToParseOutput, output)
-	}
+    // Normalize line endings to handle different platforms
+    normalizedOutput := strings.ReplaceAll(output, "\r\n", "\n")
+    
+    // Print the normalized output for debugging
+    logger.Info("Parsing output:", logger.Args("output", normalizedOutput))
 
-	return []schema.AgentAction{
-		{Tool: strings.TrimSpace(matches[1]), ToolInput: strings.TrimSpace(matches[2]), Log: output},
-	}, nil, nil
+    // Improved regex to handle dynamic script names and multiline content
+    r := regexp.MustCompile(`(?s)Action: (.*?)\nAction_input:\n(.*)`)
+    matches := r.FindStringSubmatch(normalizedOutput)
+    if len(matches) == 0 {
+        logger.Error("NUWA TERMINAL: Unable to parse the output,", logger.Args("output", normalizedOutput))
+        return nil, nil, fmt.Errorf("%w: %s", agents.ErrUnableToParseOutput, normalizedOutput)
+    }
+
+    return []schema.AgentAction{
+        {Tool: strings.TrimSpace(matches[1]), ToolInput: strings.TrimSpace(matches[2]), Log: output},
+    }, nil, nil
 }
