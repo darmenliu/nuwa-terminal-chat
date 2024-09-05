@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 
 	nuwaprmp "github.com/darmenliu/nuwa-terminal-chat/pkg/prompts"
 
@@ -59,6 +60,7 @@ func CreateTroubleshootingAgentPrompt(tools []tools.Tool) prompts.PromptTemplate
 			"tools":        toolDescriptions(tools),
 			"ShellScriptFormat": nuwaprmp.ShellScriptFormat,
 			"ShellExample": 	nuwaprmp.ShellExample,
+			"current_time": time.Now().Format(time.RFC3339),
 			"history":           "",
 		},
 	}

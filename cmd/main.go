@@ -304,14 +304,15 @@ func executor(in string) {
 		return
 	}
 
-	rsp, err := GenerateContent(ctx, prompt)
-	if err != nil {
-		logger.Error("NUWA TERMINAL: failed to generate content,", logger.Args("err", err.Error()))
-		return
-	}
-	fmt.Println("NUWA: " + rsp)
-
 	if CurrentMode == CmdMode {
+
+		rsp, err := GenerateContent(ctx, prompt)
+		if err != nil {
+			logger.Error("NUWA TERMINAL: failed to generate content,", logger.Args("err", err.Error()))
+			return
+		}
+		fmt.Println("NUWA: " + rsp)
+
 		cmd, err := parser.ParseCmdFromString(rsp)
 		if err != nil {
 			logger.Error("NUWA TERMINAL: failed to parse command,", logger.Args("err", err.Error()))
@@ -343,6 +344,13 @@ func executor(in string) {
 		}
 
 	} else if CurrentMode == TaskMode {
+		rsp, err := GenerateContent(ctx, prompt)
+		if err != nil {
+			logger.Error("NUWA TERMINAL: failed to generate content,", logger.Args("err", err.Error()))
+			return
+		}
+		fmt.Println("NUWA: " + rsp)
+
 		fmt.Println(rsp)
 		filename, content, err := ParseScript(rsp)
 		if err != nil {
