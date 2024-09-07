@@ -4,3 +4,4 @@ export GEMINI_API_KEY=apikey
 export LLM_TEMPERATURE=0.8
 # groq api use this environment variable
 export OPENAI_API_KEY=apikey
+export OLLAMA_SERVER_URL=http://localhost:8000

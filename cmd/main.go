@@ -108,7 +108,12 @@ func GetLLMBackend(ctx context.Context) (lcllms.Model, error) {
 			return nil, err
 		}
 	case "ollama":
-		model, err = lcollama.New(lcollama.WithModel(modelName))
+		serverUrl := os.Getenv("OLLAMA_SERVER_URL")
+		if serverUrl == "" {
+			logger.Error("OLLAMA_SERVER_URL is not set")
+			return nil, errors.New("OLLAMA_SERVER_URL is not set")
+		}
+		model, err = lcollama.New(lcollama.WithModel(modelName), lcollama.WithServerURL(serverUrl))
 		if err != nil {
 			logger.Error("failed to create Ollama client, error:", logger.Args("err", err.Error()))
 			return nil, err
