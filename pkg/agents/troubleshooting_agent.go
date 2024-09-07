@@ -59,6 +59,7 @@ func CreateTroubleshootingAgentPrompt(tools []tools.Tool) prompts.PromptTemplate
 		InputVariables: []string{"input", "agent_scratchpad"},
 		PartialVariables: map[string]any{
 			"tools":        toolDescriptions(tools),
+			"tool_names":   toolNames(tools),
 			"ShellScriptFormat": nuwaprmp.ShellScriptFormat,
 			"ShellExample": 	nuwaprmp.ShellExample,
 			"current_time": time.Now().Format(time.RFC3339),
@@ -66,6 +67,19 @@ func CreateTroubleshootingAgentPrompt(tools []tools.Tool) prompts.PromptTemplate
 		},
 	}
 }
+
+func toolNames(tools []tools.Tool) string {
+	var tn strings.Builder
+	for i, tool := range tools {
+		if i > 0 {
+			tn.WriteString(", ")
+		}
+		tn.WriteString(tool.Name())
+	}
+
+	return tn.String()
+}
+
 
 func toolDescriptions(tools []tools.Tool) string {
 	var ts strings.Builder
@@ -170,14 +184,14 @@ func (tbs *TroubleshootingAgent) parseOutput(output string) ([]schema.AgentActio
     logger.Info("Parsing output:", logger.Args("output", normalizedOutput))
 
     // Improved regex to handle dynamic script names and multiline content
-    r := regexp.MustCompile(`(?s)Action: (.*?)\nAction_input:\n(.*)`)
+    r := regexp.MustCompile(`(?s)Action: (.*?)\nAction_input:`)
     matches := r.FindStringSubmatch(normalizedOutput)
     if len(matches) == 0 {
         logger.Error("NUWA TERMINAL: Unable to parse the output,", logger.Args("output", normalizedOutput))
         return nil, nil, fmt.Errorf("%w: %s", agents.ErrUnableToParseOutput, normalizedOutput)
     }
-
+	logger.Info("Matched:", logger.Args("match content for tool name:", matches[0]))
     return []schema.AgentAction{
-        {Tool: strings.TrimSpace(matches[1]), ToolInput: strings.TrimSpace(matches[2]), Log: output},
+        {Tool: strings.TrimSpace(matches[1]), ToolInput: strings.TrimSpace(normalizedOutput), Log: normalizedOutput},
     }, nil, nil
 }

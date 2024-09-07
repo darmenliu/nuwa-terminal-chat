@@ -156,7 +156,9 @@ Use the following format:
 
 Question: the input task that you must perform
 Thought: you should always think about what to do next one step at a time and use a script to perform an action to complete the task.
-Generate the script like below format:
+
+Action: the Action should be one of the [{{.tool_names}}].
+Action_input: the script content with the format:
 
 {{.ShellScriptFormat}}
 
@@ -164,12 +166,7 @@ for example:
 
 {{.ShellExample}}
 
-Action: the Action is to execute the script with the {{.tools}}.
-Action_input: the script content generate by you with the format:
-
-{{.ShellScriptFormat}}
-
-Observation: the output of the action from the script.
+Observation: the output of the script.
 ... (this Thought/Action/Action Input/Observation can repeat N times)
 Thought: I now know the final answer
 Final Answer: the final answer to the original input question
