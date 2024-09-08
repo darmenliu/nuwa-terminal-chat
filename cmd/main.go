@@ -23,6 +23,7 @@ import (
 	lcagents "github.com/tmc/langchaingo/agents"
 	"github.com/tmc/langchaingo/chains"
 	lcllms "github.com/tmc/langchaingo/llms"
+	"github.com/tmc/langchaingo/llms/anthropic"
 	"github.com/tmc/langchaingo/llms/googleai"
 	lcollama "github.com/tmc/langchaingo/llms/ollama"
 	"github.com/tmc/langchaingo/llms/openai"
@@ -128,6 +129,14 @@ func GetLLMBackend(ctx context.Context) (lcllms.Model, error) {
 		)
 		if err != nil {
 			logger.Error("failed to create OpenAI client of groq, error:", logger.Args("err", err.Error()))
+			return nil, err
+		}
+	case "claude":
+		model, err = anthropic.New(
+			anthropic.WithModel("claude-3-5-sonnet-20240620"),
+		)
+		if err != nil {
+			logger.Error("failed to create anthropic client of claude, error:", logger.Args("err", err.Error()))
 			return nil, err
 		}
 	default:
