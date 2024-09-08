@@ -131,6 +131,18 @@ func GetLLMBackend(ctx context.Context) (lcllms.Model, error) {
 			logger.Error("failed to create OpenAI client of groq, error:", logger.Args("err", err.Error()))
 			return nil, err
 		}
+	case "deepseek":
+		apiKey := os.Getenv("DEEPSEEK_API_KEY")
+
+		model, err = openai.New(
+			openai.WithModel(modelName),
+			openai.WithBaseURL("https://api.deepseek.com/beta"),
+			openai.WithToken(apiKey),
+		)
+		if err != nil {
+			logger.Error("failed to create OpenAI client of groq, error:", logger.Args("err", err.Error()))
+			return nil, err
+		}
 	case "claude":
 		model, err = anthropic.New(
 			anthropic.WithModel("claude-3-5-sonnet-20240620"),

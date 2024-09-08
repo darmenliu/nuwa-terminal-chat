@@ -157,7 +157,7 @@ Use the following format:
 Question: the input task that you must perform
 Thought: you should always think about what to do next one step at a time and use a script to perform an action to complete the task.
 
-Action: the Action should be one of the [{{.tool_names}}].
+Action: the Action should be one of the {{.tool_names}}.
 Action_input: the script content with the format:
 
 {{.ShellScriptFormat}}
