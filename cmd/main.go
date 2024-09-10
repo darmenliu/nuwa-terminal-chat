@@ -168,40 +168,17 @@ func GetLLMBackend(ctx context.Context) (lcllms.Model, error) {
 // If an error occurs during model creation or content generation, an error is returned.
 func GenerateContent(ctx context.Context, prompt string) (string, error) {
 
-	llmBackend := os.Getenv("LLM_BACKEND")
-	modelName := os.Getenv("LLM_MODEL_NAME")
+	model, err := GetLLMBackend(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed to get LLM backend: %w", err)
+	}
+
 	modeTemperature, err := strconv.ParseFloat(os.Getenv("LLM_TEMPERATURE"), 64)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse LLM_TEMPERATURE: %w", err)
 	}
-	if llmBackend == "" {
-		llmBackend = "gemini"
-		modelName = "gemini-1.5-pro"
-	}
-	var model llms.Model
-	switch llmBackend {
-	case "gemini":
-		model, err = gemini.NewGemini(ctx, modelName, prompts.GetChatModePrompt())
-		if err != nil {
-			return "", fmt.Errorf("failed to create model: %w", err)
-		}
 
-	case "ollama":
-		model, err = ollama.NewOllama(ctx, modelName, modeTemperature)
-		if err != nil {
-			return "", fmt.Errorf("failed to create model: %w", err)
-		}
-	case "groq":
-		model, err = groq.NewGroq(ctx, modelName, modeTemperature)
-		if err != nil {
-			return "", fmt.Errorf("failed to create model: %w", err)
-		}
-	default:
-		return "", fmt.Errorf("unknown LLM backend: %s", llmBackend)
-	}
-	defer model.CloseBackend()
-
-	resp, err := model.GenerateContent(ctx, prompt)
+	resp, err := lcllms.GenerateFromSinglePrompt(ctx, model, prompt, lcllms.WithTemperature(modeTemperature))
 	if err != nil {
 		return "", fmt.Errorf("failed to generate content: %w", err)
 	}
