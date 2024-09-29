@@ -21,7 +21,7 @@ source envs.sh
 (base) $ ./nuwa-terminal
 ███    ██ ██    ██ ██     ██  █████      ████████ ███████ ██████  ███    ███ ██ ███    ██  █████  ██
 ████   ██ ██    ██ ██     ██ ██   ██        ██    ██      ██   ██ ████  ████ ██ ████   ██ ██   ██ ██
-██ ██  ██ ██    ██ ██  █  ██ ███████        ██    █████   ██████  ██ ████ ██ ██ ██ ██  ██ ██ ███████ ██
+██ ██  ██ ██    ██ ██  █  ██ ███████        ██    █████   ██████  ██ ████ ██ ██ ██ ██  ██ ███████ ██
 ██  ██ ██ ██    ██ ██ ███ ██ ██   ██        ██    ██      ██   ██ ██  ██  ██ ██ ██  ██ ██ ██   ██ ██
 ██   ████  ██████   ███ ███  ██   ██        ██    ███████ ██   ██ ██      ██ ██ ██   ████ ██   ██ ███████
 
@@ -65,11 +65,12 @@ What would you like to do today?
 
 ## Work Mode
 
-nuwa-terminal-chat has some working modes, you can set the mode by using `chatmode`, `cmdmode` and `taskmode`.
+nuwa-terminal-chat has some working modes, you can set the mode by using `chatmode`, `cmdmode`, `taskmode`, and `agentmode`.
 
 - chatmode: set the terminal as a pure chat robot mode, it's default work mode, you can use natural language to communicate with LLM to ask question about software development under this mode.
 - cmdmode: set the terminal as a command mode, use natural language to communicate with LLM to execute commands, you can also execute command directly.
 - taskmode: set the terminal as a task mode, use natural language to communicate with LLM to execute tasks, task mode can be used to execute more than one command at the same time, LLM will generate scripts according your input and execute it automatically. Now only support bash script.
+- agentmode: set the terminal as an agent mode for complex tasks and troubleshooting. In this mode, LLM can use various tools to complete tasks via executing scripts.
 
 ### Setting Work Mode
 
@@ -86,6 +87,7 @@ nuwa-terminal-chat has some working modes, you can set the mode by using `chatmo
      chatmode  Set terminal as a pure chat robot mode
      cmdmode   Set terminal as a command mode, use natural language to communicate
      taskmode  Set terminal as a task mode, use natural language to communicate to execute tasks
+     agentmode Set terminal as an agent mode for complex tasks and troubleshooting
      exit      Exit the terminal
 # set to cmd mode
 >>> cmdmode
@@ -154,7 +156,153 @@ cafbf8eb0ca8   b8aa50768fd6                "/usr/local/bin/kube…"   5 minutes 
 
 2024-06-08 07:10:16 INFO  NUWA TERMINAL: script file removed
 
+# set to agent mode
+>>> agentmode
+You: agentmode
+2024-06-08 08:30:00 INFO  NUWA TERMINAL: Mode is agentmode
+>>> Analyze the system logs to identify any recent errors or warnings that might indicate a potential issue.
 
+Thought: To identify recent errors or warnings in the system logs, I need to search through the log files for entries that contain the keywords "error" or "warning". I will create a shell script that searches through the most common log files (such as `/var/log/syslog`, `/var/log/messages`, and `/var/log/kern.log`) for these keywords and displays the relevant entries.
+
+Action: ScriptExecutor
+Action_input:
+
+@analyze_logs.sh@
+``` shell
+#!/bin/bash
+
+# Define the log files to search
+LOG_FILES=(/var/log/syslog /var/log/messages /var/log/kern.log)
+
+# Define the keywords to search for
+KEYWORDS=("error" "warning")
+
+# Function to search logs for keywords
+search_logs() {
+    for log_file in "${LOG_FILES[@]}"; do
+        if [ -f "$log_file" ]; then
+            echo "Searching $log_file for errors and warnings..."
+            for keyword in "${KEYWORDS[@]}"; do
+                echo "Entries containing '$keyword':"
+                grep -i "$keyword" "$log_file" | tail -n 10
+                echo "----------------------------------------"
+            done
+        else
+            echo "Log file $log_file does not exist."
+        fi
+    done
+}
+
+# Execute the search
+search_logs
+```
+
+Observation
+2024-09-29 09:08:43 INFO  Matched:
+                      └ match content for tool name:: Action: ScriptExecutor
+Action_input:
+2024-09-29 09:08:43 INFO  Start to parse the script from input:
+                      └ input: Question: Analyze the system logs to identify any recent errors or warnings that might indicate a potential issue.
+
+Thought: To identify recent errors or warnings in the system logs, I need to search through the log files for entries that contain the keywords "error" or "warning". I will create a shell script that searches through the most common log files (such as `/var/log/syslog`, `/var/log/messages`, and `/var/log/kern.log`) for these keywords and displays the relevant entries.
+
+Action: ScriptExecutor
+Action_input:
+
+@analyze_logs.sh@
+``` shell
+#!/bin/bash
+
+# Define the log files to search
+LOG_FILES=(/var/log/syslog /var/log/messages /var/log/kern.log)
+
+# Define the keywords to search for
+KEYWORDS=("error" "warning")
+
+# Function to search logs for keywords
+search_logs() {
+    for log_file in "${LOG_FILES[@]}"; do
+        if [ -f "$log_file" ]; then
+            echo "Searching $log_file for errors and warnings..."
+            for keyword in "${KEYWORDS[@]}"; do
+                echo "Entries containing '$keyword':"
+                grep -i "$keyword" "$log_file" | tail -n 10
+                echo "----------------------------------------"
+            done
+        else
+            echo "Log file $log_file does not exist."
+        fi
+    done
+}
+
+# Execute the search
+search_logs
+```
+
+Observation
+time=2024-09-29T09:08:43.649+08:00 level=INFO msg="Adding file to source file dict" content="@analyze_logs.sh@\n``` shell\n#!/bin/bash\n\n# Define the log files to search\nLOG_FILES=(/var/log/syslog /var/log/messages /var/log/kern.log)\n\n# Define the keywords to search for\nKEYWORDS=(\"error\" \"warning\")\n\n# Function to search logs for keywords\nsearch_logs() {\n    for log_file in \"${LOG_FILES[@]}\"; do\n        if [ -f \"$log_file\" ]; then\n            echo \"Searching $log_file for errors and warnings...\"\n            for keyword in \"${KEYWORDS[@]}\"; do\n                echo \"Entries containing '$keyword':\"\n                grep -i \"$keyword\" \"$log_file\" | tail -n 10\n                echo \"----------------------------------------\"\n            done\n        else\n            echo \"Log file $log_file does not exist.\"\n        fi\n    done\n}\n\n# Execute the search\nsearch_logs\n```"
+time=2024-09-29T09:08:43.649+08:00 level=INFO msg=Matched: "match_content "=analyze_logs.sh
+time=2024-09-29T09:08:43.649+08:00 level=INFO msg=Matched: "match_content "="#!/bin/bash\n\n# Define the log files to search\nLOG_FILES=(/var/log/syslog /var/log/messages /var/log/kern.log)\n\n# Define the keywords to search for\nKEYWORDS=(\"error\" \"warning\")\n\n# Function to search logs for keywords\nsearch_logs() {\n    for log_file in \"${LOG_FILES[@]}\"; do\n        if [ -f \"$log_file\" ]; then\n            echo \"Searching $log_file for errors and warnings...\"\n            for keyword in \"${KEYWORDS[@]}\"; do\n                echo \"Entries containing '$keyword':\"\n                grep -i \"$keyword\" \"$log_file\" | tail -n 10\n                echo \"----------------------------------------\"\n            done\n        else\n            echo \"Log file $log_file does not exist.\"\n        fi\n    done\n}\n\n# Execute the search\nsearch_logs"
+2024-09-29 09:08:43 INFO  Start to execute the script:
+                      └ scriptfile: /home/yliu/.nuwa-terminal/scripts/analyze_logs.sh
+2024-09-29 09:08:43 INFO  Script executed successfully, output:
+                      └ output: + LOG_FILES=(/var/log/syslog /var/log/messages /var/log/kern.log)
++ KEYWORDS=("error" "warning")
++ search_logs
++ for log_file in "${LOG_FILES[@]}"
++ '[' -f /var/log/syslog ']'
++ echo 'Searching /var/log/syslog for errors and warnings...'
+Searching /var/log/syslog for errors and warnings...
++ for keyword in "${KEYWORDS[@]}"
++ echo 'Entries containing '\''error'\'':'
+Entries containing 'error':
++ grep -i error /var/log/syslog
++ tail -n 10
+Sep 29 08:13:43 PC-20220101GUTO networkd-dispatcher[208]: ERROR:Unknown state for interface NetworkctlListState(idx=1, name='lo', type='loopback', operational='n/a', administrative='unmanaged'): n/a
+Sep 29 08:13:43 PC-20220101GUTO networkd-dispatcher[208]: ERROR:Unknown state for interface NetworkctlListState(idx=2, name='eth0', type='ether', operational='n/a', administrative='unmanaged'): n/a
+Sep 29 08:13:43 PC-20220101GUTO systemd-xdg-autostart-generator[422]: Not generating service for XDG autostart app-at\x2dspi\x2ddbus\x2dbus@autostart.service, error parsing Exec= line: No such file or directory
+Sep 29 08:23:46 PC-20220101GUTO subiquity_event.300[300]: subiquity/Error/apply_autoinstall_config
+Sep 29 08:23:46 PC-20220101GUTO subiquity_event.300[300]: subiquity/Error/apply_autoinstall_config
++ echo ----------------------------------------
+----------------------------------------
++ for keyword in "${KEYWORDS[@]}"
++ echo 'Entries containing '\''warning'\'':'
+Entries containing 'warning':
++ grep -i warning /var/log/syslog
++ tail -n 10
+Sep 29 08:13:43 PC-20220101GUTO networkd-dispatcher[296]: WARNING: systemd-networkd is not running, output will be incomplete.
++ echo ----------------------------------------
+----------------------------------------
++ for log_file in "${LOG_FILES[@]}"
++ '[' -f /var/log/messages ']'
++ echo 'Log file /var/log/messages does not exist.'
+Log file /var/log/messages does not exist.
++ for log_file in "${LOG_FILES[@]}"
++ '[' -f /var/log/kern.log ']'
++ echo 'Searching /var/log/kern.log for errors and warnings...'
+Searching /var/log/kern.log for errors and warnings...
++ for keyword in "${KEYWORDS[@]}"
++ echo 'Entries containing '\''error'\'':'
+Entries containing 'error':
++ grep -i error /var/log/kern.log
++ tail -n 10
++ echo ----------------------------------------
+----------------------------------------
++ for keyword in "${KEYWORDS[@]}"
++ echo 'Entries containing '\''warning'\'':'
+Entries containing 'warning':
++ grep -i warning /var/log/kern.log
++ tail -n 10
++ echo ----------------------------------------
+----------------------------------------
+
+NUWA:  The system logs contain several errors and warnings that might indicate potential issues. Notable errors include:
+1. **networkd-dispatcher errors**: Unknown state for network interfaces.
+2. **systemd-xdg-autostart-generator error**: Error parsing Exec= line.
+3. **subiquity errors**: Errors during the autoinstall process.
+4. **networkd-dispatcher warning**: systemd-networkd is not running.
+
+These errors and warnings should be investigated further to determine the root cause and resolve the issues.
 ```
 
 ## Configration
@@ -196,6 +344,7 @@ source envs.sh
 - Act as a terminal assistant.
 - Execute commands with natural language.
 - Execute some complicated task with script file.
+- Use agent mode to execute complex tasks and troubleshooting.
 
 ### TODO
 
