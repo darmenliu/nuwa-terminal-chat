@@ -84,26 +84,23 @@ func GetLLMBackend(ctx context.Context) (lcllms.Model, error) {
 	logger := pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
 	llmBackend := os.Getenv("LLM_BACKEND")
 	modelName := os.Getenv("LLM_MODEL_NAME")
+	apiKey := os.Getenv("LLM_API_KEY")
 
 	if llmBackend == "" {
 		llmBackend = "gemini"
 		modelName = "gemini-1.5-pro"
 	}
+
+	if apiKey == "" {
+		logger.Error("LLM_API_KEY is not set")
+		return nil, errors.New("LLM_API_KEY is not set")
+	}
+
 	var model lcllms.Model
 	var err error
 	switch llmBackend {
 	case "gemini":
-		apiKey := os.Getenv("GEMINI_API_KEY")
-		if apiKey == "" {
-			logger.Error("GEMINI_API_KEY is not set")
-			return nil, errors.New("GEMINI_API_KEY is not set")
-		}
-
 		model, err = googleai.New(ctx, googleai.WithAPIKey(apiKey), googleai.WithDefaultModel(modelName))
-		if err != nil {
-			logger.Error("failed to create GoogleAI client, error:", logger.Args("err", err.Error()))
-			return nil, err
-		}
 	case "ollama":
 		serverUrl := os.Getenv("OLLAMA_SERVER_URL")
 		if serverUrl == "" {
@@ -111,44 +108,30 @@ func GetLLMBackend(ctx context.Context) (lcllms.Model, error) {
 			return nil, errors.New("OLLAMA_SERVER_URL is not set")
 		}
 		model, err = lcollama.New(lcollama.WithModel(modelName), lcollama.WithServerURL(serverUrl))
-		if err != nil {
-			logger.Error("failed to create Ollama client, error:", logger.Args("err", err.Error()))
-			return nil, err
-		}
 	case "groq":
-		apiKey := os.Getenv("GROQ_API_KEY")
-
 		model, err = openai.New(
 			openai.WithModel("llama3-8b-8192"),
 			openai.WithBaseURL("https://api.groq.com/openai/v1"),
 			openai.WithToken(apiKey),
 		)
-		if err != nil {
-			logger.Error("failed to create OpenAI client of groq, error:", logger.Args("err", err.Error()))
-			return nil, err
-		}
 	case "deepseek":
-		apiKey := os.Getenv("DEEPSEEK_API_KEY")
-
 		model, err = openai.New(
 			openai.WithModel(modelName),
 			openai.WithBaseURL("https://api.deepseek.com/beta"),
 			openai.WithToken(apiKey),
 		)
-		if err != nil {
-			logger.Error("failed to create OpenAI client of groq, error:", logger.Args("err", err.Error()))
-			return nil, err
-		}
 	case "claude":
 		model, err = anthropic.New(
 			anthropic.WithModel("claude-3-5-sonnet-20240620"),
+			anthropic.WithToken(apiKey),
 		)
-		if err != nil {
-			logger.Error("failed to create anthropic client of claude, error:", logger.Args("err", err.Error()))
-			return nil, err
-		}
 	default:
 		return nil, fmt.Errorf("unknown LLM backend: %s", llmBackend)
+	}
+
+	if err != nil {
+		logger.Error(fmt.Sprintf("failed to create %s client, error:", llmBackend), logger.Args("err", err.Error()))
+		return nil, err
 	}
 
 	return model, nil
@@ -181,10 +164,9 @@ func GenerateContent(ctx context.Context, prompt string) (string, error) {
 	return resp, nil
 }
 
-
 type NuwaChat struct {
-	model lcllms.Model
-	chatHistory []lcllms.MessageContent
+	model        lcllms.Model
+	chatHistory  []lcllms.MessageContent
 	SystemPrompt string
 }
 
@@ -199,8 +181,8 @@ func NewNuwaChat(ctx context.Context, systemPrompt string) (*NuwaChat, error) {
 	}
 
 	return &NuwaChat{
-		model: model,
-		chatHistory: content,
+		model:        model,
+		chatHistory:  content,
 		SystemPrompt: systemPrompt,
 	}, nil
 }

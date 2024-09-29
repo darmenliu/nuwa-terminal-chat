@@ -13,15 +13,15 @@ git clone https://github.com/darmenliu/nuwa-terminal-chat.git
 cd nuwa-terminal-chat
 make
 
-# use sed to replace GEMINI_API_KEY=apikey to real gemini api key
-sed -i 's/GEMINI_API_KEY=apikey/GEMINI_API_KEY=<your gemini api key>/g' envs.sh
+# use sed to replace LLM_API_KEY=apikey to real api key
+sed -i 's/LLM_API_KEY=apikey/LLM_API_KEY=<your api key>/g' envs.sh
 source envs.sh
 
 # run nuwa-terminal-chat
 (base) $ ./nuwa-terminal
 ███    ██ ██    ██ ██     ██  █████      ████████ ███████ ██████  ███    ███ ██ ███    ██  █████  ██
 ████   ██ ██    ██ ██     ██ ██   ██        ██    ██      ██   ██ ████  ████ ██ ████   ██ ██   ██ ██
-██ ██  ██ ██    ██ ██  █  ██ ███████        ██    █████   ██████  ██ ████ ██ ██ ██ ██  ██ ███████ ██
+██ ██  ██ ██    ██ ██  █  ██ ███████        ██    █████   ██████  ██ ████ ██ ██ ██ ██  ██ ██ ███████ ██
 ██  ██ ██ ██    ██ ██ ███ ██ ██   ██        ██    ██      ██   ██ ██  ██  ██ ██ ██  ██ ██ ██   ██ ██
 ██   ████  ██████   ███ ███  ██   ██        ██    ███████ ██   ██ ██      ██ ██ ██   ████ ██   ██ ███████
 
@@ -159,18 +159,6 @@ cafbf8eb0ca8   b8aa50768fd6                "/usr/local/bin/kube…"   5 minutes 
 
 ## Configration
 
-### Use gemini as backend
-
-The default backend LLM is gemini model. but you need to replace GEMINI_API_KEY=apikey to real gemini api key.
-
-``` bash
-
-# use sed to replace GEMINI_API_KEY=apikey to real gemini api key
-sed -i 's/GEMINI_API_KEY=apikey/GEMINI_API_KEY=<your gemini api key>/g' envs.sh
-source envs.sh
-
-```
-
 ### Use local LLM via ollama as backend
 
 ``` bash
@@ -179,10 +167,9 @@ source envs.sh
 vim envs.sh
 export LLM_BACKEND=ollama
 export LLM_MODEL_NAME=llama2
-# export GEMINI_API_KEY=apikey
+export LLM_API_KEY=apikey
 export LLM_TEMPERATURE=0.8
-# groq api use this environment variable
-# export OPENAI_API_KEY=apikey
+export OLLAMA_SERVER_URL=http://localhost:8000
 
 source envs.sh
 
@@ -196,11 +183,8 @@ source envs.sh
 vim envs.sh
 export LLM_BACKEND=groq
 export LLM_MODEL_NAME=llama3-8b-8192
-# export GEMINI_API_KEY=apikey
+export LLM_API_KEY=<your groq api key>
 export LLM_TEMPERATURE=0.8
-# groq api use this environment variable
-export OPENAI_API_KEY=<your groq api key>
-
 
 source envs.sh
 
