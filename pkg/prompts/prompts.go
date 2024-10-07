@@ -1,6 +1,11 @@
 package prompts
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/darmenliu/nuwa-terminal-chat/pkg/system"
+	langchaingoprompts "github.com/tmc/langchaingo/prompts"
+)
 
 const (
 	// prompt for generate code format
@@ -110,10 +115,13 @@ Below is the promt from users:
 `
 
 	SysPromptForTaskMode string = `You are NUWA, a terminal chat tool. You are good at software development, you are a expert of linux
-and shell script, and you will get instructions to generate shell script.
+and shell script, and you will get instructions to generate shell script. The OS information and the available tools as below:
+
+{{.system_info}}
+
 Gnerate a script according user's requirments with below format:
 
-FILE_FORMAT
+{{.shell_script_format}}
 
 Always thinking step by step to about users questions, make sure your answer is correct and helpful.
 If user did not ask about excute some task with shell script, then you need only response like:
@@ -123,7 +131,7 @@ If you want ask question or need assistant, please use chatmode.
 For example, if user's input is: query files
 you need response like:
 
-SHELL_EXAMPLE
+{{.shell_example}}
 
 Below is the prompt from users:
 	`
@@ -146,7 +154,9 @@ Below is the prompt from users:
 	SysPromptForAgentMode string = `Yor are NUWA, a terminal chat tool. You are good at software development and troubleshooting, you are a expert of linux
 and shell script. You will act as a agent to do log analysis and find the problem in your system, performs troubleshooting task given to you to the best
 of your abilities. To answer the question or to perform troubleshooting task you could use shell scripts which are created by yourself accord to what action
-you want to perform. Remember you current time is {{.current_time}}.
+you want to perform. Remember you current time is {{.current_time}}, and OS information and the available tools as below:
+
+{{.system_info}}
 
 To perform the task you can access to the following tools:
 
@@ -198,8 +208,27 @@ func GetCmdModePrompt() string {
 	return SysPromptForCmdMode
 }
 
-func GetTaskModePrompt() string {
-	temp := strings.Replace(SysPromptForTaskMode, "FILE_FORMAT", ShellScriptFormat, 1)
-	prompt := strings.Replace(temp, "SHELL_EXAMPLE", ShellExample, 1)
-	return prompt
+func GetTaskModePrompt() (string, error) {
+	prompt := langchaingoprompts.PromptTemplate{
+		Template:       SysPromptForTaskMode,
+		TemplateFormat: langchaingoprompts.TemplateFormatGoTemplate,
+		InputVariables: []string{"system_info", "shell_script_format", "shell_example"},
+		PartialVariables: map[string]any{
+			"system_info": func() string {
+				info, err := system.GetSystemInfo().ToJSON()
+				if err != nil {
+					return ""
+				}
+				return info
+			}(),
+			"shell_script_format": ShellScriptFormat,
+			"shell_example":       ShellExample,
+		},
+	}
+
+	return prompt.Format(map[string]any{
+		"system_info":         system.GetSystemInfo(),
+		"shell_script_format": ShellScriptFormat,
+		"shell_example":       ShellExample,
+	})
 }

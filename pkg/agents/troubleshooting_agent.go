@@ -9,6 +9,7 @@ import (
 	"time"
 
 	nuwaprmp "github.com/darmenliu/nuwa-terminal-chat/pkg/prompts"
+	"github.com/darmenliu/nuwa-terminal-chat/pkg/system"
 	"github.com/pterm/pterm"
 
 	"github.com/tmc/langchaingo/agents"
@@ -58,11 +59,18 @@ func CreateTroubleshootingAgentPrompt(tools []tools.Tool) prompts.PromptTemplate
 		TemplateFormat: prompts.TemplateFormatGoTemplate,
 		InputVariables: []string{"input", "agent_scratchpad"},
 		PartialVariables: map[string]any{
-			"tools":        toolDescriptions(tools),
-			"tool_names":   toolNames(tools),
+			"system_info": func() string {
+				info, err := system.GetSystemInfo().ToJSON()
+				if err != nil {
+					return ""
+				}
+				return info
+			}(),
+			"tools":             toolDescriptions(tools),
+			"tool_names":        toolNames(tools),
 			"ShellScriptFormat": nuwaprmp.ShellScriptFormat,
-			"ShellExample": 	nuwaprmp.ShellExample,
-			"current_time": time.Now().Format(time.RFC3339),
+			"ShellExample":      nuwaprmp.ShellExample,
+			"current_time":      time.Now().Format(time.RFC3339),
 			"history":           "",
 		},
 	}
@@ -79,7 +87,6 @@ func toolNames(tools []tools.Tool) string {
 
 	return tn.String()
 }
-
 
 func toolDescriptions(tools []tools.Tool) string {
 	var ts strings.Builder
@@ -163,35 +170,35 @@ func constructScratchPad(steps []schema.AgentStep) string {
 }
 
 func (tbs *TroubleshootingAgent) parseOutput(output string) ([]schema.AgentAction, *schema.AgentFinish, error) {
-    logger := pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
-    if strings.Contains(output, _troubleshootingFinalAnswerAction) {
-        splits := strings.Split(output, _troubleshootingFinalAnswerAction)
+	logger := pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
+	if strings.Contains(output, _troubleshootingFinalAnswerAction) {
+		splits := strings.Split(output, _troubleshootingFinalAnswerAction)
 
-        finishAction := &schema.AgentFinish{
-            ReturnValues: map[string]any{
-                tbs.OutputKey: splits[len(splits)-1],
-            },
-            Log: output,
-        }
+		finishAction := &schema.AgentFinish{
+			ReturnValues: map[string]any{
+				tbs.OutputKey: splits[len(splits)-1],
+			},
+			Log: output,
+		}
 
-        return nil, finishAction, nil
-    }
+		return nil, finishAction, nil
+	}
 
-    // Normalize line endings to handle different platforms
-    normalizedOutput := strings.ReplaceAll(output, "\r\n", "\n")
-    
-    // Print the normalized output for debugging
-    logger.Info("Parsing output:", logger.Args("output", normalizedOutput))
+	// Normalize line endings to handle different platforms
+	normalizedOutput := strings.ReplaceAll(output, "\r\n", "\n")
 
-    // Improved regex to handle dynamic script names and multiline content
-    r := regexp.MustCompile(`(?s)Action: (.*?)\nAction_input:`)
-    matches := r.FindStringSubmatch(normalizedOutput)
-    if len(matches) == 0 {
-        logger.Error("NUWA TERMINAL: Unable to parse the output,", logger.Args("output", normalizedOutput))
-        return nil, nil, fmt.Errorf("%w: %s", agents.ErrUnableToParseOutput, normalizedOutput)
-    }
+	// Print the normalized output for debugging
+	logger.Info("Parsing output:", logger.Args("output", normalizedOutput))
+
+	// Improved regex to handle dynamic script names and multiline content
+	r := regexp.MustCompile(`(?s)Action: (.*?)\nAction_input:`)
+	matches := r.FindStringSubmatch(normalizedOutput)
+	if len(matches) == 0 {
+		logger.Error("NUWA TERMINAL: Unable to parse the output,", logger.Args("output", normalizedOutput))
+		return nil, nil, fmt.Errorf("%w: %s", agents.ErrUnableToParseOutput, normalizedOutput)
+	}
 	logger.Info("Matched:", logger.Args("match content for tool name:", matches[0]))
-    return []schema.AgentAction{
-        {Tool: strings.TrimSpace(matches[1]), ToolInput: strings.TrimSpace(normalizedOutput), Log: normalizedOutput},
-    }, nil, nil
+	return []schema.AgentAction{
+		{Tool: strings.TrimSpace(matches[1]), ToolInput: strings.TrimSpace(normalizedOutput), Log: normalizedOutput},
+	}, nil, nil
 }

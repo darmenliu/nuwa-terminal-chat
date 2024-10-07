@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -12,6 +13,7 @@ import (
 	"github.com/darmenliu/nuwa-terminal-chat/pkg/cmdexe"
 	"github.com/darmenliu/nuwa-terminal-chat/pkg/parser"
 	"github.com/darmenliu/nuwa-terminal-chat/pkg/prompts"
+	"github.com/darmenliu/nuwa-terminal-chat/pkg/system"
 
 	goterm "github.com/c-bata/go-prompt"
 	"github.com/pterm/pterm"
@@ -61,13 +63,19 @@ func SetCurrentMode(in string) {
 // GetSysPromptAccordingMode returns the system prompt according to the current mode.
 // It takes the current mode as input and returns the corresponding prompt string.
 func GetSysPromptAccordingMode(current string) string {
+	logger := pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
 	switch current {
 	case ChatMode:
 		return prompts.GetChatModePrompt()
 	case CmdMode:
 		return prompts.GetCmdModePrompt()
 	case TaskMode:
-		return prompts.GetTaskModePrompt()
+		prompt, err := prompts.GetTaskModePrompt()
+		if err != nil {
+			logger.Error("Failed to get task mode prompt:", logger.Args("err", err.Error()))
+			return ""
+		}
+		return prompt
 	case AgentMode:
 		return ""
 	default:
@@ -417,6 +425,18 @@ func main() {
 	// 		FailureExit()
 	// 	}
 	// }
+	// 获取系统信息
+	sysInfo := system.GetSystemInfo()
+
+	// 将系统信息转换为格式化的 JSON 字符串
+	jsonStr, err := sysInfo.ToJSON()
+	if err != nil {
+		log.Fatalf("转换系统信息为 JSON 时出错: %v", err)
+	}
+
+	// 打印 JSON 字符串
+	fmt.Println("系统信息:")
+	fmt.Println(jsonStr)
 
 	//Get current directory path
 	currentDir, err := os.Getwd()
