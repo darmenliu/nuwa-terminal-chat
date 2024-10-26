@@ -403,13 +403,16 @@ func executor(in string) {
 }
 
 func main() {
-
 	// Initialize a big text display with the letters "Nuwa" and "Terminal"
 	// "P" is displayed in cyan and "Term" is displayed in light magenta
-	pterm.DefaultBigText.WithLetters(
+	err := pterm.DefaultBigText.WithLetters(
 		putils.LettersFromStringWithStyle("Nuwa", pterm.FgCyan.ToStyle()),
 		putils.LettersFromStringWithStyle(" Terminal", pterm.FgLightMagenta.ToStyle())).
 		Render() // Render the big text to the terminal
+	if err != nil {
+		pterm.Error.Printf("Can not render the big text to the terminal: %v\n", err)
+		os.Exit(1)
+	}
 
 	// logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	logger := pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)

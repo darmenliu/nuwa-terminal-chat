@@ -12,7 +12,9 @@ type FileReader interface {
 // DefaultFileReader is the default implementation of FileReader.
 type DefaultFileReader struct{}
 
-func newDefaultFileReader() FileReader {
+// NewDefaultFileReader creates a new instance of DefaultFileReader.
+// This function is exported so it can be used by other packages if needed.
+func NewDefaultFileReader() FileReader {
 	return &DefaultFileReader{}
 }
 
@@ -26,7 +28,7 @@ func (fr *DefaultFileReader) ReadFile(path string) (string, error) {
 }
 
 // Usage:
-// fr := &DefaultFileReader{}
+// fr := file.NewDefaultFileReader()
 // content, err := fr.ReadFile("/path/to/file.txt")
 // if err != nil {
 //     // handle error
