@@ -3,8 +3,8 @@ package main
 import (
 	"context"
 	"errors"
+	"flag"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -13,7 +13,6 @@ import (
 	"github.com/darmenliu/nuwa-terminal-chat/pkg/cmdexe"
 	"github.com/darmenliu/nuwa-terminal-chat/pkg/parser"
 	"github.com/darmenliu/nuwa-terminal-chat/pkg/prompts"
-	"github.com/darmenliu/nuwa-terminal-chat/pkg/system"
 
 	goterm "github.com/c-bata/go-prompt"
 	"github.com/pterm/pterm"
@@ -402,59 +401,94 @@ func executor(in string) {
 
 }
 
+// 添加新的命令行参数结构体
+type CommandFlags struct {
+	interactive bool
+	chatMode    bool
+	cmdMode     bool
+	taskMode    bool
+	agentMode   bool
+	query       string
+	help        bool
+}
+
 func main() {
-	// Initialize a big text display with the letters "Nuwa" and "Terminal"
-	// "P" is displayed in cyan and "Term" is displayed in light magenta
+	// 定义命令行参数
+	flags := CommandFlags{}
+	flag.BoolVar(&flags.interactive, "i", false, "Interactive mode")
+	flag.BoolVar(&flags.chatMode, "c", false, "Chat mode")
+	flag.BoolVar(&flags.cmdMode, "m", false, "Command mode")
+	flag.BoolVar(&flags.taskMode, "t", false, "Task mode")
+	flag.BoolVar(&flags.agentMode, "a", false, "Agent mode")
+	flag.StringVar(&flags.query, "q", "", "Query to process")
+	flag.BoolVar(&flags.help, "h", false, "Show help message")
+	flag.Parse()
+
+	// 显示帮助信息
+	if flags.help {
+		fmt.Println("Nuwa Terminal - Your AI-powered terminal assistant")
+		fmt.Println("\nUsage:")
+		fmt.Println("  nuwa-terminal [flags] [query]")
+		fmt.Println("\nFlags:")
+		fmt.Println("  -i    Enter interactive mode, the nuwa will be like a bash environment, you can execute commands or tasks with natural language")
+		fmt.Println("  -c    Chat mode, you can ask questions to Nuwa with natural language")
+		fmt.Println("  -m    Command mode, you can execute commands with natural language")
+		fmt.Println("  -t    Task mode, you can create a task with natural language, then Nuwa will create a script to complete the task")
+		fmt.Println("  -a    Agent mode, this is a experimental feature, you can ask Nuwa to help you execute more complex tasks, but the result may not be as expected")
+		fmt.Println("  -q    Query to process")
+		fmt.Println("  -h    Show this help message")
+		fmt.Println("\nExamples:")
+		fmt.Println("  nuwa-terminal -c -q \"who are you?\"")
+		fmt.Println("  nuwa-terminal -i")
+		fmt.Println("  nuwa-terminal -m -q \"list all files\"")
+		os.Exit(0)
+	}
+
+	// 初始化大文本显示
 	err := pterm.DefaultBigText.WithLetters(
 		putils.LettersFromStringWithStyle("Nuwa", pterm.FgCyan.ToStyle()),
 		putils.LettersFromStringWithStyle(" Terminal", pterm.FgLightMagenta.ToStyle())).
-		Render() // Render the big text to the terminal
+		Render()
 	if err != nil {
 		pterm.Error.Printf("Can not render the big text to the terminal: %v\n", err)
 		os.Exit(1)
 	}
 
-	// logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	logger := pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
 
-	// // Create nuwa-engineer workspace
-	// workspaceManager := NewDefaultWorkSpaceManager()
-	// if workspaceManager.IsWorkspaceEixst() {
-	//      logger.Info("workspace already exist")
-	// } else {
-	// 	err := workspaceManager.CreateWorkspace()
-	// 	if err != nil {
-	// 		logger.Error("failed to create workspace,", logger.Args("err", err.Error()))
-	// 		FailureExit()
-	// 	}
-	// }
-	// 获取系统信息
-	sysInfo := system.GetSystemInfo()
-
-	// 将系统信息转换为格式化的 JSON 字符串
-	jsonStr, err := sysInfo.ToJSON()
-	if err != nil {
-		log.Fatalf("转换系统信息为 JSON 时出错: %v", err)
-	}
-
-	// 打印 JSON 字符串
-	fmt.Println("系统信息:")
-	fmt.Println(jsonStr)
-
-	//Get current directory path
+	// Get current directory path
 	currentDir, err := os.Getwd()
 	if err != nil {
 		logger.Fatal("NUWA TERMINAL: failed to get current directory path,", logger.Args("err", err.Error()))
 	}
 
-	defer fmt.Println("Bye!")
-	p := goterm.New(
-		executor,
-		completer,
-		goterm.OptionPrefix(currentDir+">>> "),
-		goterm.OptionLivePrefix(changeLivePrefix),
-		goterm.OptionTitle("NUWA TERMINAL"),
-	)
-	p.Run()
+	// Set initial mode
+	if flags.chatMode {
+		SetCurrentMode(ChatMode)
+	} else if flags.cmdMode {
+		SetCurrentMode(CmdMode)
+	} else if flags.taskMode {
+		SetCurrentMode(TaskMode)
+	} else if flags.agentMode {
+		SetCurrentMode(AgentMode)
+	}
 
+	// If there is a query, process it directly and exit
+	if flags.query != "" {
+		executor(flags.query)
+		return
+	}
+
+	// If it is interactive mode or no other mode is specified, enter interactive mode
+	if flags.interactive || (!flags.chatMode && !flags.cmdMode && !flags.taskMode && !flags.agentMode && flags.query == "") {
+		defer fmt.Println("Bye!")
+		p := goterm.New(
+			executor,
+			completer,
+			goterm.OptionPrefix(currentDir+">>> "),
+			goterm.OptionLivePrefix(changeLivePrefix),
+			goterm.OptionTitle("NUWA TERMINAL"),
+		)
+		p.Run()
+	}
 }
