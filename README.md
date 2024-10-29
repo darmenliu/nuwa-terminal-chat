@@ -61,6 +61,39 @@ What would you like to do today?
 
 /home/bob>>>
 
+## Command Line Usage
+
+Nuwa Terminal supports various command line flags for different operation modes:
+
+```bash
+nuwa-terminal [flags] [query]
+```
+
+### Flags
+- `-i`: Enter interactive mode, where Nuwa provides a bash-like environment for executing commands or tasks with natural language
+- `-c`: Chat mode, ask questions to Nuwa using natural language
+- `-m`: Command mode, execute commands using natural language
+- `-t`: Task mode, you can create a task with natural language, then Nuwa will create a script to complete the task
+- `-a`: Agent mode, this is a experimental feature, you can ask Nuwa to help you execute more complex tasks, but the result may not be as expected
+- `-q`: User's input like a question, query or instruction
+- `-h`: Show help message
+
+### Examples
+```bash
+# Start interactive mode
+nuwa-terminal -i
+
+# Ask a question in chat mode
+nuwa-terminal -c -q "who are you?"
+
+# Execute a command using natural language
+nuwa-terminal -m -q "list all files"
+
+# Create and run a script
+nuwa-terminal -t -q "create a hello world program"
+
+# Use agent mode for troubleshooting
+nuwa-terminal -a -q "analyze system logs for errors"
 ```
 
 ## Work Mode
