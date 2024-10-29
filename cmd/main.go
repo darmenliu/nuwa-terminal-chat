@@ -36,6 +36,11 @@ const (
 
 	Catchdir   = ".nuwa-terminal"
 	ScriptsDir = "scripts"
+
+	ChatModePrefix  = "@"
+	CmdModePrefix   = "#"
+	TaskModePrefix  = "$"
+	AgentModePrefix = "&"
 )
 
 var CurrentMode string = ChatMode
@@ -44,6 +49,8 @@ var CurrentDir string = ""
 // Set current directory
 func SetCurrentDir(in string) {
 	CurrentDir = in
+	LivePrefixState.LivePrefix = CurrentDir + getModePrefix(CurrentMode) + " "
+	LivePrefixState.IsEnable = true
 }
 
 func CheckDirChanged(in string) bool {
@@ -57,6 +64,8 @@ func CheckDirChanged(in string) bool {
 // SetCurrentMode sets the current mode to the specified value.
 func SetCurrentMode(in string) {
 	CurrentMode = in
+	LivePrefixState.LivePrefix = CurrentDir + getModePrefix(CurrentMode) + " "
+	LivePrefixState.IsEnable = true
 }
 
 // GetSysPromptAccordingMode returns the system prompt according to the current mode.
@@ -260,7 +269,15 @@ func executor(in string) {
 	}
 
 	if (in == ChatMode) || (in == CmdMode) || (in == TaskMode) || (in == AgentMode) {
+		curDir, err := os.Getwd()
+		if err != nil {
+			logger.Warn("NUWA TERMINAL: failed to get current directory path,", logger.Args("err", err.Error()))
+			curDir = CurrentDir
+		}
+
 		SetCurrentMode(in)
+		SetCurrentDir(curDir)
+
 		logger.Info("NUWA TERMINAL: Mode is " + CurrentMode)
 		return
 	}
@@ -322,7 +339,7 @@ func executor(in string) {
 		}
 
 		if CheckDirChanged(curDir) {
-			LivePrefixState.LivePrefix = CurrentDir + ">>>"
+			LivePrefixState.LivePrefix = CurrentDir + getModePrefix(CurrentMode) + ">>>"
 			LivePrefixState.IsEnable = true
 		}
 
@@ -412,6 +429,21 @@ type CommandFlags struct {
 	help        bool
 }
 
+func getModePrefix(mode string) string {
+	switch mode {
+	case ChatMode:
+		return ChatModePrefix
+	case CmdMode:
+		return CmdModePrefix
+	case TaskMode:
+		return TaskModePrefix
+	case AgentMode:
+		return AgentModePrefix
+	default:
+		return ChatModePrefix
+	}
+}
+
 func main() {
 	// 定义命令行参数
 	flags := CommandFlags{}
@@ -435,7 +467,7 @@ func main() {
 		fmt.Println("  -m    Command mode, you can execute commands with natural language")
 		fmt.Println("  -t    Task mode, you can create a task with natural language, then Nuwa will create a script to complete the task")
 		fmt.Println("  -a    Agent mode, this is a experimental feature, you can ask Nuwa to help you execute more complex tasks, but the result may not be as expected")
-		fmt.Println("  -q    Query to process")
+		fmt.Println("  -q    User's input like a question, query or instruction")
 		fmt.Println("  -h    Show this help message")
 		fmt.Println("\nExamples:")
 		fmt.Println("  nuwa-terminal -c -q \"who are you?\"")
@@ -482,10 +514,15 @@ func main() {
 	// If it is interactive mode or no other mode is specified, enter interactive mode
 	if flags.interactive || (!flags.chatMode && !flags.cmdMode && !flags.taskMode && !flags.agentMode && flags.query == "") {
 		defer fmt.Println("Bye!")
+
+		// 设置初始 LivePrefix
+		LivePrefixState.LivePrefix = currentDir + getModePrefix(CurrentMode) + " "
+		LivePrefixState.IsEnable = true
+
 		p := goterm.New(
 			executor,
 			completer,
-			goterm.OptionPrefix(currentDir+">>> "),
+			goterm.OptionPrefix(""), // 将默认前缀设置为空，完全使用 LivePrefix
 			goterm.OptionLivePrefix(changeLivePrefix),
 			goterm.OptionTitle("NUWA TERMINAL"),
 		)
