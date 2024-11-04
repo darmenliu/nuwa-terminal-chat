@@ -90,7 +90,7 @@ func (g *GoCodeParser) ParseCode(text string) ([]SourceFile, error) {
 	//```[a-z]*\n[\s\S]*?\n```
 	//[a-zA-Z0-9_.]+\n```[^\n]*\n[\s\S]*?\n```
 	// @[a-zA-Z0-9_/.]+@\n```[^\n]*\n[\s\S]*?\n```
-	regstr := "@[a-zA-Z0-9_/.]+@\n```[^\n]*\n[" + `\s\S` + "]*?\n```"
+	regstr := "```[^\n]*\n[" + `\s\S` + "]*?\n```"
 
 	regex := regexp.MustCompile(regstr)
 

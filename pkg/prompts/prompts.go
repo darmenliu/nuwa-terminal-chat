@@ -136,17 +136,14 @@ you need response like:
 Below is the prompt from users:
 	`
 
-	ShellScriptFormat string = "@FILENAME.sh@\n" +
-		"``` shell\n" +
+	ShellScriptFormat string = "``` shell\n" +
 		"CODE\n" +
 		"```\n\n" +
 
 		"The following tokens must be replaced like so:\n" +
-		"FILENAME is the lowercase file name\n" +
 		"CODE is the full script contents in the file\n\n"
 
-	ShellExample string = "@query_files.sh@\n" +
-		"``` shell\n" +
+	ShellExample string = "``` shell\n" +
 		"#!/bin/bash\n" +
 		"ls -l\n" +
 		"```\n\n"

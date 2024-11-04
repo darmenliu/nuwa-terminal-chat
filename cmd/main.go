@@ -15,6 +15,7 @@ import (
 	"github.com/darmenliu/nuwa-terminal-chat/pkg/prompts"
 
 	goterm "github.com/c-bata/go-prompt"
+	"github.com/google/uuid"
 	"github.com/pterm/pterm"
 	"github.com/pterm/pterm/putils"
 	lcagents "github.com/tmc/langchaingo/agents"
@@ -239,7 +240,7 @@ func ParseScript(response string) (filename, content string, err error) {
 		return "", "", fmt.Errorf("no source files found")
 	}
 
-	sources[0].ParseFileName()
+	sources[0].FileName = uuid.New().String() + ".sh"
 	sources[0].ParseFileContent()
 
 	filename = sources[0].FileName
@@ -382,7 +383,7 @@ func executor(in string) {
 
 		output, err := cmdexe.ExecScriptWithOutput(scriptfile)
 		if err != nil {
-			logger.Error("NUWA TERMINAL: failed to execute script,", logger.Args("err", err.Error()))
+			logger.Error("NUWA TERMINAL: failed to execute script,", logger.Args("err", err.Error()), logger.Args("output", output))
 			return
 		}
 
