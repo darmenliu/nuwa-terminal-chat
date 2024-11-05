@@ -257,9 +257,181 @@ func changeLivePrefix() (string, bool) {
 	return LivePrefixState.LivePrefix, LivePrefixState.IsEnable
 }
 
+// handleModeSwitch 处理模式切换
+func handleModeSwitch(mode string) {
+	logger := pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
+	curDir, err := os.Getwd()
+	if err != nil {
+		logger.Warn("NUWA TERMINAL: failed to get current directory path,", logger.Args("err", err.Error()))
+		curDir = CurrentDir
+	}
+
+	SetCurrentMode(mode)
+	SetCurrentDir(curDir)
+
+	logger.Info("NUWA TERMINAL: Mode is " + CurrentMode)
+}
+
+// handleChatMode 处理聊天模式
+func handleChatMode(ctx context.Context, input string) error {
+	logger := pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
+	sysPrompt := GetSysPromptAccordingMode(ChatMode)
+	nuwa, err := NewNuwaChat(ctx, sysPrompt)
+	if err != nil {
+		logger.Error("NUWA TERMINAL: failed to create NuwaChat,", logger.Args("err", err.Error()))
+		return err
+	}
+
+	rsp, err := nuwa.Chat(ctx, input)
+	if err != nil {
+		logger.Error("NUWA TERMINAL: failed to generate content,", logger.Args("err", err.Error()))
+		return err
+	}
+
+	fmt.Println("NUWA: " + rsp)
+	return nil
+}
+
+// handleCmdMode 处理命令模式
+func handleCmdMode(ctx context.Context, prompt string) error {
+	logger := pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
+
+	rsp, err := GenerateContent(ctx, prompt)
+	if err != nil {
+		logger.Error("NUWA TERMINAL: failed to generate content,", logger.Args("err", err.Error()))
+		return err
+	}
+	fmt.Println("NUWA: " + rsp)
+
+	cmd, err := parser.ParseCmdFromString(rsp)
+	if err != nil {
+		logger.Error("NUWA TERMINAL: failed to parse command,", logger.Args("err", err.Error()))
+		return err
+	}
+
+	if cmd == "" {
+		logger.Info("NUWA TERMINAL: empty command")
+		return nil
+	}
+
+	output, err := cmdexe.ExecCommandWithOutput(cmd)
+	if err != nil {
+		logger.Error("NUWA TERMINAL: failed to execute command,", logger.Args("err", err.Error(), "output", output))
+		return err
+	}
+	fmt.Println(output)
+
+	// 检查当前目录是否改变
+	curDir, err := os.Getwd()
+	if err != nil {
+		logger.Warn("NUWA TERMINAL: failed to get current directory path,", logger.Args("err", err.Error()))
+		return err
+	}
+
+	if CheckDirChanged(curDir) {
+		LivePrefixState.LivePrefix = CurrentDir + getModePrefix(CurrentMode) + " "
+		LivePrefixState.IsEnable = true
+	}
+
+	return nil
+}
+
+// handleTaskMode 处理任务模式
+func handleTaskMode(ctx context.Context, prompt string) error {
+	logger := pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
+
+	rsp, err := GenerateContent(ctx, prompt)
+	if err != nil {
+		logger.Error("NUWA TERMINAL: failed to generate content,", logger.Args("err", err.Error()))
+		return err
+	}
+	fmt.Println("NUWA: " + rsp)
+
+	filename, content, err := ParseScript(rsp)
+	if err != nil {
+		logger.Error("NUWA TERMINAL: failed to parse script,", logger.Args("err", err.Error()))
+		return err
+	}
+
+	if filename == "" {
+		logger.Info("NUWA TERMINAL: empty script")
+		return nil
+	}
+
+	scriptfile, err := prepareScriptFile(filename, content)
+	if err != nil {
+		return err
+	}
+
+	output, err := cmdexe.ExecScriptWithOutput(scriptfile)
+	if err != nil {
+		logger.Error("NUWA TERMINAL: failed to execute script,", logger.Args("err", err.Error()), logger.Args("output", output))
+		return err
+	}
+
+	fmt.Println(output)
+
+	if err := os.Remove(scriptfile); err != nil {
+		logger.Error("NUWA TERMINAL: failed to remove script file,", logger.Args("err", err.Error()))
+		return err
+	}
+
+	logger.Info("NUWA TERMINAL: script file removed")
+	return nil
+}
+
+// prepareScriptFile 准备脚本文件
+func prepareScriptFile(filename, content string) (string, error) {
+	logger := pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
+
+	homedir := os.Getenv("HOME")
+	scriptdir := filepath.Join(homedir, Catchdir, ScriptsDir)
+	if err := os.MkdirAll(scriptdir, os.ModePerm); err != nil {
+		logger.Error("NUWA TERMINAL: failed to create script directory,", logger.Args("err", err.Error()))
+		return "", err
+	}
+
+	scriptfile := filepath.Join(scriptdir, filename)
+	if err := os.WriteFile(scriptfile, []byte(content), os.ModePerm); err != nil {
+		logger.Error("NUWA TERMINAL: failed to write script file,", logger.Args("err", err.Error()))
+		return "", err
+	}
+
+	logger.Info("NUWA TERMINAL: script file saved to " + scriptfile)
+	return scriptfile, nil
+}
+
+// handleAgentMode 处理代理模式
+func handleAgentMode(ctx context.Context, input string) error {
+	logger := pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
+
+	llm, err := GetLLMBackend(ctx)
+	if err != nil {
+		logger.Error("NUWA TERMINAL: failed to get LLM backend,", logger.Args("err", err.Error()))
+		return err
+	}
+
+	agentTools := []tools.Tool{
+		&agents.ScriptExecutor{},
+	}
+
+	agent := agents.NewTroubleshootingAgent(llm, agentTools, "output", nil)
+	executor := lcagents.NewExecutor(agent)
+	answer, err := chains.Run(context.Background(), executor, input)
+	if err != nil {
+		logger.Error("NUWA TERMINAL: failed to run agent,", logger.Args("err", err.Error()))
+		return err
+	}
+
+	fmt.Println("NUWA: " + answer)
+	return nil
+}
+
+// executor 主执行函数
 func executor(in string) {
 	logger := pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
 	fmt.Println("You: " + in)
+
 	if in == "" {
 		return
 	}
@@ -269,154 +441,32 @@ func executor(in string) {
 		os.Exit(0)
 	}
 
+	// 处理模式切换
 	if (in == ChatMode) || (in == CmdMode) || (in == TaskMode) || (in == AgentMode) {
-		curDir, err := os.Getwd()
-		if err != nil {
-			logger.Warn("NUWA TERMINAL: failed to get current directory path,", logger.Args("err", err.Error()))
-			curDir = CurrentDir
-		}
-
-		SetCurrentMode(in)
-		SetCurrentDir(curDir)
-
-		logger.Info("NUWA TERMINAL: Mode is " + CurrentMode)
+		handleModeSwitch(in)
 		return
 	}
 
 	prompt := GetPromptAccordingToCurrentMode(CurrentMode, in)
-
-	// Add Suggest
 	AddSuggest(in, "")
-
 	ctx := context.Background()
-	if CurrentMode == ChatMode {
-		sysPrompt := GetSysPromptAccordingMode(CurrentMode)
-		nuwa, err := NewNuwaChat(ctx, sysPrompt)
-		if err != nil {
-			logger.Error("NUWA TERMINAL: failed to create NuwaChat,", logger.Args("err", err.Error()))
-			return
-		}
-		rsp, err := nuwa.Chat(ctx, in)
-		if err != nil {
-			logger.Error("NUWA TERMINAL: failed to generate content,", logger.Args("err", err.Error()))
-			return
-		}
-		fmt.Println("NUWA: " + rsp)
-		return
+
+	// 根据当前模式处理输入
+	var err error
+	switch CurrentMode {
+	case ChatMode:
+		err = handleChatMode(ctx, in)
+	case CmdMode:
+		err = handleCmdMode(ctx, prompt)
+	case TaskMode:
+		err = handleTaskMode(ctx, prompt)
+	case AgentMode:
+		err = handleAgentMode(ctx, in)
 	}
 
-	if CurrentMode == CmdMode {
-
-		rsp, err := GenerateContent(ctx, prompt)
-		if err != nil {
-			logger.Error("NUWA TERMINAL: failed to generate content,", logger.Args("err", err.Error()))
-			return
-		}
-		fmt.Println("NUWA: " + rsp)
-
-		cmd, err := parser.ParseCmdFromString(rsp)
-		if err != nil {
-			logger.Error("NUWA TERMINAL: failed to parse command,", logger.Args("err", err.Error()))
-			return
-		}
-
-		if cmd == "" {
-			logger.Info("NUWA TERMINAL: empty command")
-			return
-		}
-
-		output, err := cmdexe.ExecCommandWithOutput(cmd)
-		if err != nil {
-			logger.Error("NUWA TERMINAL: failed to execute command,", logger.Args("err", err.Error(), "output", output))
-			return
-		}
-		fmt.Println(output)
-
-		// Check if the current directory has changed
-		curDir, err := os.Getwd()
-		if err != nil {
-			logger.Warn("NUWA TERMINAL: failed to get current directory path,", logger.Args("err", err.Error()))
-			return
-		}
-
-		if CheckDirChanged(curDir) {
-			LivePrefixState.LivePrefix = CurrentDir + getModePrefix(CurrentMode) + ">>>"
-			LivePrefixState.IsEnable = true
-		}
-
-	} else if CurrentMode == TaskMode {
-		rsp, err := GenerateContent(ctx, prompt)
-		if err != nil {
-			logger.Error("NUWA TERMINAL: failed to generate content,", logger.Args("err", err.Error()))
-			return
-		}
-		fmt.Println("NUWA: " + rsp)
-
-		fmt.Println(rsp)
-		filename, content, err := ParseScript(rsp)
-		if err != nil {
-			logger.Error("NUWA TERMINAL: failed to parse script,", logger.Args("err", err.Error()))
-			return
-		}
-
-		if filename == "" {
-			logger.Info("NUWA TERMINAL: empty script")
-			return
-		}
-
-		homedir := os.Getenv("HOME")
-		scriptdir := filepath.Join(homedir, Catchdir, ScriptsDir)
-		err = os.MkdirAll(scriptdir, os.ModePerm)
-		if err != nil {
-			logger.Error("NUWA TERMINAL: failed to create script directory,", logger.Args("err", err.Error()))
-			return
-		}
-
-		scriptfile := filepath.Join(scriptdir, filename)
-		err = os.WriteFile(scriptfile, []byte(content), os.ModePerm)
-		if err != nil {
-			logger.Error("NUWA TERMINAL: failed to write script file,", logger.Args("err", err.Error()))
-			return
-		}
-
-		logger.Info("NUWA TERMINAL: script file saved to " + scriptfile)
-
-		output, err := cmdexe.ExecScriptWithOutput(scriptfile)
-		if err != nil {
-			logger.Error("NUWA TERMINAL: failed to execute script,", logger.Args("err", err.Error()), logger.Args("output", output))
-			return
-		}
-
-		fmt.Println(output)
-		// remove the script
-		err = os.Remove(scriptfile)
-		if err != nil {
-			logger.Error("NUWA TERMINAL: failed to remove script file,", logger.Args("err", err.Error()))
-			return
-		}
-
-		logger.Info("NUWA TERMINAL: script file removed")
-	} else if CurrentMode == AgentMode {
-		llm, err := GetLLMBackend(ctx)
-		if err != nil {
-			logger.Error("NUWA TERMINAL: failed to get LLM backend,", logger.Args("err", err.Error()))
-			return
-		}
-
-		agentTools := []tools.Tool{
-			&agents.ScriptExecutor{},
-		}
-
-		agent := agents.NewTroubleshootingAgent(llm, agentTools, "output", nil)
-		executor := lcagents.NewExecutor(agent)
-		answer, err := chains.Run(context.Background(), executor, in)
-		if err != nil {
-			logger.Error("NUWA TERMINAL: failed to run agent,", logger.Args("err", err.Error()))
-			return
-		}
-		fmt.Println("NUWA: " + answer)
+	if err != nil {
+		logger.Error("NUWA TERMINAL: Error executing command", logger.Args("mode", CurrentMode, "error", err.Error()))
 	}
-
 }
 
 // 添加新的命令行参数结构体
