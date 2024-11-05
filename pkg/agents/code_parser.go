@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/darmenliu/nuwa-terminal-chat/pkg/parser"
+	"github.com/google/uuid"
 	"github.com/pterm/pterm"
 	"github.com/tmc/langchaingo/tools"
 )
@@ -64,10 +65,9 @@ func ParseScript(response string) (filename, content string, err error) {
 		return "", "", fmt.Errorf("no source files found")
 	}
 
-	sources[0].ParseFileName()
 	sources[0].ParseFileContent()
 
-	filename = sources[0].FileName
+	filename = uuid.New().String() + ".sh"
 	content = sources[0].FileContent
 	return filename, content, nil
 }
