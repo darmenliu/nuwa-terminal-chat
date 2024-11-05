@@ -34,6 +34,7 @@ const (
 	TaskMode  = "taskmode"
 	AgentMode = "agentmode"
 	Exit      = "exit"
+	BashMode  = "bashmode"
 
 	Catchdir   = ".nuwa-terminal"
 	ScriptsDir = "scripts"
@@ -42,12 +43,14 @@ const (
 	CmdModePrefix   = "#"
 	TaskModePrefix  = "$"
 	AgentModePrefix = "&"
+	BashModePrefix  = ">"
 
 	// 快捷键常量
 	ChatModeKey  = "@" // Ctrl+2
 	CmdModeKey   = "#" // Ctrl+3
 	TaskModeKey  = "$" // Ctrl+4
 	AgentModeKey = "&" // Ctrl+7
+	BashModeKey  = ">" // Ctrl+B
 )
 
 var CurrentMode string = ChatMode
@@ -433,6 +436,33 @@ func handleAgentMode(ctx context.Context, input string) error {
 	return nil
 }
 
+// handleBashMode 处理 bash mode
+func handleBashMode(input string) error {
+	logger := pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
+
+	// 直接执行命令，不经过 LLM
+	output, err := cmdexe.ExecCommandWithOutput(input)
+	if err != nil {
+		logger.Error("NUWA TERMINAL: failed to execute command,", logger.Args("err", err.Error(), "output", output))
+		return err
+	}
+	fmt.Println(output)
+
+	// 检查当前目录是否改变
+	curDir, err := os.Getwd()
+	if err != nil {
+		logger.Warn("NUWA TERMINAL: failed to get current directory path,", logger.Args("err", err.Error()))
+		return err
+	}
+
+	if CheckDirChanged(curDir) {
+		LivePrefixState.LivePrefix = CurrentDir + getModePrefix(CurrentMode) + " "
+		LivePrefixState.IsEnable = true
+	}
+
+	return nil
+}
+
 // executor 主执行函数
 func executor(in string) {
 	logger := pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
@@ -448,7 +478,7 @@ func executor(in string) {
 	}
 
 	// 处理模式切换
-	if (in == ChatMode) || (in == CmdMode) || (in == TaskMode) || (in == AgentMode) {
+	if (in == ChatMode) || (in == CmdMode) || (in == TaskMode) || (in == AgentMode) || (in == BashMode) {
 		handleModeSwitch(in)
 		return
 	}
@@ -468,6 +498,8 @@ func executor(in string) {
 		err = handleTaskMode(ctx, prompt)
 	case AgentMode:
 		err = handleAgentMode(ctx, in)
+	case BashMode:
+		err = handleBashMode(in)
 	}
 
 	if err != nil {
@@ -496,6 +528,8 @@ func getModePrefix(mode string) string {
 		return TaskModePrefix
 	case AgentMode:
 		return AgentModePrefix
+	case BashMode:
+		return BashModePrefix
 	default:
 		return ChatModePrefix
 	}
@@ -505,17 +539,20 @@ func getModePrefix(mode string) string {
 func handleKeyBinding(in goterm.Document) (goterm.Document, bool) {
 
 	switch in.Text {
-	case ChatModeKey: // Ctrl+2
+	case ChatModeKey: // Ctrl+C
 		handleModeSwitch(ChatMode)
 		return goterm.Document{}, true
-	case CmdModeKey: // Ctrl+3
+	case CmdModeKey: // Ctrl+F
 		handleModeSwitch(CmdMode)
 		return goterm.Document{}, true
-	case TaskModeKey: // Ctrl+4
+	case TaskModeKey: // Ctrl+S
 		handleModeSwitch(TaskMode)
 		return goterm.Document{}, true
-	case AgentModeKey: // Ctrl+7
+	case AgentModeKey: // Ctrl+A
 		handleModeSwitch(AgentMode)
+		return goterm.Document{}, true
+	case BashModeKey: // Ctrl+B
+		handleModeSwitch(BashMode)
 		return goterm.Document{}, true
 	}
 	return in, false
@@ -551,6 +588,7 @@ func main() {
 		fmt.Println("  Ctrl+3    Switch to Command mode")
 		fmt.Println("  Ctrl+4    Switch to Task mode")
 		fmt.Println("  Ctrl+7    Switch to Agent mode")
+		fmt.Println("  Ctrl+B    Switch to Bash mode")
 		fmt.Println("\nExamples:")
 		fmt.Println("  nuwa-terminal -c -q \"who are you?\"")
 		fmt.Println("  nuwa-terminal -i")
@@ -612,6 +650,7 @@ func main() {
 				goterm.KeyBind{Key: goterm.ControlF, Fn: func(b *goterm.Buffer) { handleModeSwitch(CmdMode) }},
 				goterm.KeyBind{Key: goterm.ControlS, Fn: func(b *goterm.Buffer) { handleModeSwitch(TaskMode) }},
 				goterm.KeyBind{Key: goterm.ControlA, Fn: func(b *goterm.Buffer) { handleModeSwitch(AgentMode) }},
+				goterm.KeyBind{Key: goterm.ControlB, Fn: func(b *goterm.Buffer) { handleModeSwitch(BashMode) }},
 			),
 		)
 		p.Run()
