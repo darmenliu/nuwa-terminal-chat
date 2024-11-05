@@ -98,7 +98,29 @@ nuwa-terminal -a -q "analyze system logs for errors"
 
 ## Work Mode
 
-nuwa-terminal-chat has some working modes, you can set the mode by using `chatmode`, `cmdmode`, `taskmode`, and `agentmode`.
+nuwa-terminal-chat has some working modes, you can set the mode by using `chatmode`, `cmdmode`, `taskmode`, and `agentmode`, or using keyboard shortcuts.
+
+### Mode Switching
+
+You can switch between modes in two ways:
+
+1. Using commands:
+- `chatmode`: Set the terminal as a pure chat robot mode (default)
+- `cmdmode`: Set the terminal as a command mode
+- `taskmode`: Set the terminal as a task mode
+- `agentmode`: Set the terminal as an agent mode
+
+2. Using keyboard shortcuts (in interactive mode):
+- `Ctrl+C`: Switch to Chat mode
+- `Ctrl+F`: Switch to Command mode
+- `Ctrl+S`: Switch to Task mode
+- `Ctrl+A`: Switch to Agent mode
+
+The current mode is indicated by the prompt prefix:
+- Chat mode: `path@`
+- Command mode: `path#`
+- Task mode: `path$`
+- Agent mode: `path&`
 
 - chatmode: set the terminal as a pure chat robot mode, it's default work mode, you can use natural language to communicate with LLM to ask question about software development under this mode.
 - cmdmode: set the terminal as a command mode, use natural language to communicate with LLM to execute commands, you can also execute command directly.

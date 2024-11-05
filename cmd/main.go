@@ -42,6 +42,12 @@ const (
 	CmdModePrefix   = "#"
 	TaskModePrefix  = "$"
 	AgentModePrefix = "&"
+
+	// 快捷键常量
+	ChatModeKey  = "@" // Ctrl+2
+	CmdModeKey   = "#" // Ctrl+3
+	TaskModeKey  = "$" // Ctrl+4
+	AgentModeKey = "&" // Ctrl+7
 )
 
 var CurrentMode string = ChatMode
@@ -495,6 +501,26 @@ func getModePrefix(mode string) string {
 	}
 }
 
+// 添加快捷键处理数
+func handleKeyBinding(in goterm.Document) (goterm.Document, bool) {
+
+	switch in.Text {
+	case ChatModeKey: // Ctrl+2
+		handleModeSwitch(ChatMode)
+		return goterm.Document{}, true
+	case CmdModeKey: // Ctrl+3
+		handleModeSwitch(CmdMode)
+		return goterm.Document{}, true
+	case TaskModeKey: // Ctrl+4
+		handleModeSwitch(TaskMode)
+		return goterm.Document{}, true
+	case AgentModeKey: // Ctrl+7
+		handleModeSwitch(AgentMode)
+		return goterm.Document{}, true
+	}
+	return in, false
+}
+
 func main() {
 	// 定义命令行参数
 	flags := CommandFlags{}
@@ -513,13 +539,18 @@ func main() {
 		fmt.Println("\nUsage:")
 		fmt.Println("  nuwa-terminal [flags] [query]")
 		fmt.Println("\nFlags:")
-		fmt.Println("  -i    Enter interactive mode, the nuwa will be like a bash environment, you can execute commands or tasks with natural language")
+		fmt.Println("  -i    Enter interactive mode, the nuwa will be like a bash environment，you can execute commands or tasks with natural language")
 		fmt.Println("  -c    Chat mode, you can ask questions to Nuwa with natural language")
 		fmt.Println("  -m    Command mode, you can execute commands with natural language")
-		fmt.Println("  -t    Task mode, you can create a task with natural language, then Nuwa will create a script to complete the task")
-		fmt.Println("  -a    Agent mode, this is a experimental feature, you can ask Nuwa to help you execute more complex tasks, but the result may not be as expected")
+		fmt.Println("  -t    Task mode, you can create a task with natural language，then nuwa will create a script to complete the task")
+		fmt.Println("  -a    Agent mode, this is a experimental feature，you can ask Nuwa to help you execute more complex tasks, but the result may not be as expected")
 		fmt.Println("  -q    User's input like a question, query or instruction")
 		fmt.Println("  -h    Show this help message")
+		fmt.Println("\nShortcuts (in interactive mode):")
+		fmt.Println("  Ctrl+2    Switch to Chat mode")
+		fmt.Println("  Ctrl+3    Switch to Command mode")
+		fmt.Println("  Ctrl+4    Switch to Task mode")
+		fmt.Println("  Ctrl+7    Switch to Agent mode")
 		fmt.Println("\nExamples:")
 		fmt.Println("  nuwa-terminal -c -q \"who are you?\"")
 		fmt.Println("  nuwa-terminal -i")
@@ -573,9 +604,15 @@ func main() {
 		p := goterm.New(
 			executor,
 			completer,
-			goterm.OptionPrefix(""), // 将默认前缀设置为空，完全使用 LivePrefix
+			goterm.OptionPrefix(""),
 			goterm.OptionLivePrefix(changeLivePrefix),
 			goterm.OptionTitle("NUWA TERMINAL"),
+			goterm.OptionAddKeyBind(
+				goterm.KeyBind{Key: goterm.ControlC, Fn: func(b *goterm.Buffer) { handleModeSwitch(ChatMode) }},
+				goterm.KeyBind{Key: goterm.ControlF, Fn: func(b *goterm.Buffer) { handleModeSwitch(CmdMode) }},
+				goterm.KeyBind{Key: goterm.ControlS, Fn: func(b *goterm.Buffer) { handleModeSwitch(TaskMode) }},
+				goterm.KeyBind{Key: goterm.ControlA, Fn: func(b *goterm.Buffer) { handleModeSwitch(AgentMode) }},
+			),
 		)
 		p.Run()
 	}
