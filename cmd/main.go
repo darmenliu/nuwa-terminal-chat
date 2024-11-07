@@ -141,9 +141,14 @@ func GetLLMBackend(ctx context.Context) (lcllms.Model, error) {
 			openai.WithToken(apiKey),
 		)
 	case "deepseek":
+		baseurl := os.Getenv("LLM_BASE_URL")
+		if baseurl == "" {
+			logger.Error("LLM_BASE_URL is not set")
+			return nil, errors.New("LLM_BASE_URL is not set")
+		}
 		model, err = openai.New(
 			openai.WithModel(modelName),
-			openai.WithBaseURL("https://api.deepseek.com/beta"),
+			openai.WithBaseURL(baseurl),
 			openai.WithToken(apiKey),
 		)
 	case "claude":
