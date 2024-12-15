@@ -540,29 +540,6 @@ func getModePrefix(mode string) string {
 	}
 }
 
-// 添加快捷键处理数
-func handleKeyBinding(in goterm.Document) (goterm.Document, bool) {
-
-	switch in.Text {
-	case ChatModeKey: // Ctrl+C
-		handleModeSwitch(ChatMode)
-		return goterm.Document{}, true
-	case CmdModeKey: // Ctrl+F
-		handleModeSwitch(CmdMode)
-		return goterm.Document{}, true
-	case TaskModeKey: // Ctrl+S
-		handleModeSwitch(TaskMode)
-		return goterm.Document{}, true
-	case AgentModeKey: // Ctrl+A
-		handleModeSwitch(AgentMode)
-		return goterm.Document{}, true
-	case BashModeKey: // Ctrl+B
-		handleModeSwitch(BashMode)
-		return goterm.Document{}, true
-	}
-	return in, false
-}
-
 func main() {
 	// 定义命令行参数
 	flags := CommandFlags{}
