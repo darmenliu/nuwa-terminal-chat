@@ -41,7 +41,12 @@ jobs:
           go build -o "$BINARY_NAME" -v ./cmd
       - name: Generate Release Notes
         run: |
-          git log $(git describe HEAD~ --tags --abbrev=0)..HEAD --pretty='format:* %h %s%n  * %an <%ae>' --no-merges >> ".github/RELEASE-TEMPLATE.md"
+          # if there is no tag, get all commits
+          if ! git describe --tags --abbrev=0 2>/dev/null; then
+            git log --pretty='format:* %h %s%n  * %an <%ae>' --no-merges >> ".github/RELEASE-TEMPLATE.md"
+          else
+            git log $(git describe --tags --abbrev=0)..HEAD --pretty='format:* %h %s%n  * %an <%ae>' --no-merges >> ".github/RELEASE-TEMPLATE.md"
+          fi
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
