@@ -49,12 +49,11 @@ jobs:
           fi
           # Replace placeholder with actual changes
           sed '/\[Changes will be automatically inserted here by the release workflow\]/r changes.tmp' .github/RELEASE-TEMPLATE.md > RELEASE-NOTES.md
-          mv RELEASE-NOTES.md .github/RELEASE-TEMPLATE.md
           rm changes.tmp
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          body_path: ".github/RELEASE-TEMPLATE.md"
+          body_path: "RELEASE-NOTES.md"
           files: ${{ env.BINARY_NAME }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
