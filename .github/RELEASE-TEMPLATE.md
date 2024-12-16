@@ -40,8 +40,6 @@ export LLM_TEMPERATURE=0.8
 ## Supported Platforms
 
 - Linux (amd64, arm64)
-- macOS (amd64, arm64)
-- Windows (amd64)
 
 ## Known Issues
 
