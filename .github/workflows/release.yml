@@ -41,12 +41,16 @@ jobs:
           go build -o "$BINARY_NAME" -v ./cmd
       - name: Generate Release Notes
         run: |
-          # if there is no tag, get all commits
+          # Create temp file for changes
           if ! git describe --tags --abbrev=0 2>/dev/null; then
-            git log --pretty='format:* %h %s%n  * %an <%ae>' --no-merges >> ".github/RELEASE-TEMPLATE.md"
+            git log --pretty='format:* %h %s%n  * %an <%ae>' --no-merges > changes.tmp
           else
-            git log $(git describe --tags --abbrev=0)..HEAD --pretty='format:* %h %s%n  * %an <%ae>' --no-merges >> ".github/RELEASE-TEMPLATE.md"
+            git log $(git describe --tags --abbrev=0)..HEAD --pretty='format:* %h %s%n  * %an <%ae>' --no-merges > changes.tmp
           fi
+          # Replace placeholder with actual changes
+          sed '/\[Changes will be automatically inserted here by the release workflow\]/r changes.tmp' .github/RELEASE-TEMPLATE.md > RELEASE-NOTES.md
+          mv RELEASE-NOTES.md .github/RELEASE-TEMPLATE.md
+          rm changes.tmp
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
