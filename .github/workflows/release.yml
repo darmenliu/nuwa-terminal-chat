@@ -55,5 +55,6 @@ jobs:
         with:
           body_path: "RELEASE-NOTES.md"
           files: ${{ env.BINARY_NAME }}
+          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
