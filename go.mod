@@ -1,8 +1,6 @@
 module github.com/darmenliu/nuwa-terminal-chat
 
-go 1.22.0
-
-toolchain go1.22.4
+go 1.22
 
 require (
 	github.com/c-bata/go-prompt v0.2.5
