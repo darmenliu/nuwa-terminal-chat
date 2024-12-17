@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/darmenliu/nuwa-terminal-chat/pkg/agents"
 	"github.com/darmenliu/nuwa-terminal-chat/pkg/cmdexe"
@@ -310,6 +311,11 @@ func handleChatMode(ctx context.Context, input string) error {
 func handleCmdMode(ctx context.Context, prompt string) error {
 	logger := pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
 
+	// 检查是否是 .nw 文件
+	if strings.HasSuffix(prompt, ".nw") {
+		return handleNuwaScript(ctx, prompt)
+	}
+
 	rsp, err := GenerateContent(ctx, prompt)
 	if err != nil {
 		logger.Error("NUWA TERMINAL: failed to generate content,", logger.Args("err", err.Error()))
@@ -346,6 +352,69 @@ func handleCmdMode(ctx context.Context, prompt string) error {
 		LivePrefixState.LivePrefix = CurrentDir + getModePrefix(CurrentMode) + " "
 		LivePrefixState.IsEnable = true
 	}
+
+	return nil
+}
+
+// handleNuwaScript 处理 .nw 脚本文件
+func handleNuwaScript(ctx context.Context, filepath string) error {
+	logger := pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
+
+	// 检查文件是否存在且具有执行权限
+	info, err := os.Stat(filepath)
+	if err != nil {
+		logger.Error("NUWA TERMINAL: failed to access script file,", logger.Args("err", err.Error()))
+		return err
+	}
+
+	// 检查执行权限
+	if info.Mode()&0111 == 0 {
+		return fmt.Errorf("script file %s is not executable", filepath)
+	}
+
+	// 读取文件内容
+	content, err := os.ReadFile(filepath)
+	if err != nil {
+		logger.Error("NUWA TERMINAL: failed to read script file,", logger.Args("err", err.Error()))
+		return err
+	}
+
+	// 检查文件头
+	lines := strings.Split(string(content), "\n")
+	if len(lines) == 0 || !strings.HasPrefix(lines[0], "#!/bin/nuwa") {
+		return fmt.Errorf("invalid nuwa script file: must start with #!/bin/nuwa")
+	}
+
+	// 提取提示词（跳过第一行）
+	prompt := strings.Join(lines[1:], "\n")
+
+	// 生成内容
+	rsp, err := GenerateContent(ctx, prompt)
+	if err != nil {
+		logger.Error("NUWA TERMINAL: failed to generate content,", logger.Args("err", err.Error()))
+		return err
+	}
+	fmt.Println("NUWA: " + rsp)
+
+	// 解析命令
+	cmd, err := parser.ParseCmdFromString(rsp)
+	if err != nil {
+		logger.Error("NUWA TERMINAL: failed to parse command,", logger.Args("err", err.Error()))
+		return err
+	}
+
+	if cmd == "" {
+		logger.Info("NUWA TERMINAL: empty command")
+		return nil
+	}
+
+	// 执行命令
+	output, err := cmdexe.ExecCommandWithOutput(cmd)
+	if err != nil {
+		logger.Error("NUWA TERMINAL: failed to execute command,", logger.Args("err", err.Error(), "output", output))
+		return err
+	}
+	fmt.Println(output)
 
 	return nil
 }
