@@ -128,7 +128,7 @@ If user did not ask about excute some task with shell script, then you need only
 I am sorry, I'm in taskmode, I can't understand your input, please input a task to generate shell script.
 If you want ask question or need assistant, please use chatmode.
 
-For example, if user's input is: query files
+For example, if user's input is: query all files in /usr/bin
 you need response like:
 
 {{.shell_example}}
@@ -145,7 +145,17 @@ Below is the prompt from users:
 
 	ShellExample string = "``` shell\n" +
 		"#!/bin/bash\n" +
-		"ls -l\n" +
+		"ls -l /usr/bin\n" +
+		"```\n\n"
+
+	NuwaScriptFormat string = "```\n" +
+		"#!/bin/nuwa\n" +
+		"<natural language prompt content>\n" +
+		"```\n\n"
+
+	NuwaScriptExample string = "```\n" +
+		"#!/bin/nuwa\n" +
+		"query all files in /usr/bin\n" +
 		"```\n\n"
 
 	SysPromptForAgentMode string = `Yor are NUWA, a terminal chat tool. You are good at software development and troubleshooting, you are a expert of linux
@@ -183,6 +193,31 @@ Begin!
 Question: {{.input}}
 {{.agent_scratchpad}}
 `
+
+	SysPromptForNWScriptMode string = `You are NUWA, a terminal chat tool. You are good at software development, expert of linux
+and shell script, and you will get instructions to generate shell script. The OS information and the available tools as below:
+
+{{.system_info}}
+
+transform nuwa natural language script:
+
+{{.nuwa_script_format}}
+
+to shell script:
+
+{{.shell_script_format}}
+
+Think and make sure the shell script is aligned with the natural language script.
+For example, below is a nuwa natural language script:
+
+{{.nuwa_script_example}}
+
+You need to transform it to shell script:
+
+{{.shell_example}}
+
+Below is nuwa natural language script from users:
+	`
 )
 
 func GetCodeGeneratorPrompt(fileFormat string) string {
@@ -226,6 +261,35 @@ func GetTaskModePrompt() (string, error) {
 	return prompt.Format(map[string]any{
 		"system_info":         system.GetSystemInfo(),
 		"shell_script_format": ShellScriptFormat,
+		"shell_example":       ShellExample,
+	})
+}
+
+func GetScriptModePrompt() (string, error) {
+	prompt := langchaingoprompts.PromptTemplate{
+		Template:       SysPromptForNWScriptMode,
+		TemplateFormat: langchaingoprompts.TemplateFormatGoTemplate,
+		InputVariables: []string{"system_info", "nuwa_script_format", "shell_script_format", "nuwa_script_example", "shell_example"},
+		PartialVariables: map[string]any{
+			"system_info": func() string {
+				info, err := system.GetSystemInfo().ToJSON()
+				if err != nil {
+					return ""
+				}
+				return info
+			}(),
+			"nuwa_script_format": NuwaScriptFormat,
+			"shell_script_format": ShellScriptFormat,
+			"nuwa_script_example": NuwaScriptExample,
+			"shell_example":       ShellExample,
+		},
+	}
+
+	return prompt.Format(map[string]any{
+		"system_info":         system.GetSystemInfo(),
+		"nuwa_script_format":  NuwaScriptFormat,
+		"shell_script_format": ShellScriptFormat,
+		"nuwa_script_example": NuwaScriptExample,
 		"shell_example":       ShellExample,
 	})
 }
