@@ -286,6 +286,37 @@ func handleModeSwitch(mode string) {
 	logger.Info("NUWA TERMINAL: Mode is " + CurrentMode)
 }
 
+func handleScriptMode(ctx context.Context, in string) (bool, error) {
+	logger := pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
+	// check if it is a .nw script file
+	if strings.HasSuffix(in, ".nw") {
+		// handle "nw path/to/script.nw" format
+		scriptPath := in
+		if strings.HasPrefix(in, "nw ") {
+			scriptPath = strings.TrimPrefix(in, "nw ")
+			scriptPath = strings.TrimSpace(scriptPath)
+		}
+
+		// if it is a relative path, convert it to an absolute path
+		if !filepath.IsAbs(scriptPath) {
+			curDir, err := os.Getwd()
+			if err != nil {
+				logger.Error("NUWA TERMINAL: failed to get current directory,", logger.Args("err", err.Error()))
+				return true, err
+			}
+			scriptPath = filepath.Join(curDir, scriptPath)
+		}
+
+		err := handleNuwaScript(ctx, scriptPath)
+		if err != nil {
+			logger.Error("NUWA TERMINAL: failed to execute script,", logger.Args("err", err.Error()))
+			return true, err
+		}
+		return true, nil
+	}
+	return false, nil
+}
+
 // handleChatMode 处理聊天模式
 func handleChatMode(ctx context.Context, input string) error {
 	logger := pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
@@ -309,11 +340,6 @@ func handleChatMode(ctx context.Context, input string) error {
 // handleCmdMode 处理命令模式
 func handleCmdMode(ctx context.Context, prompt string) error {
 	logger := pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
-
-	// 检查是否是 .nw 文件
-	if strings.HasSuffix(prompt, ".nw") {
-		return handleNuwaScript(ctx, prompt)
-	}
 
 	rsp, err := GenerateContent(ctx, prompt)
 	if err != nil {
@@ -359,35 +385,37 @@ func handleCmdMode(ctx context.Context, prompt string) error {
 func handleNuwaScript(ctx context.Context, filepath string) error {
 	logger := pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
 
-	// 检查文件是否存在且具有执行权限
+	// check if the file exists and has execute permission
 	info, err := os.Stat(filepath)
 	if err != nil {
 		logger.Error("NUWA TERMINAL: failed to access script file,", logger.Args("err", err.Error()))
 		return err
 	}
 
-	// 检查执行权限
 	if info.Mode()&0111 == 0 {
 		return fmt.Errorf("script file %s is not executable", filepath)
 	}
 
-	// 读取文件内容
 	content, err := os.ReadFile(filepath)
 	if err != nil {
 		logger.Error("NUWA TERMINAL: failed to read script file,", logger.Args("err", err.Error()))
 		return err
 	}
 
-	// 检查文件头
 	lines := strings.Split(string(content), "\n")
 	if len(lines) == 0 || !strings.HasPrefix(lines[0], "#!/bin/nuwa") {
 		return fmt.Errorf("invalid nuwa script file: must start with #!/bin/nuwa")
 	}
 
-	// 提取提示词（跳过第一行）
-	prompt := strings.Join(lines[1:], "\n")
+	scriptPrompt := strings.Join(lines[0:], "\n")
 
-	// 生成内容
+	prompt, err := prompts.GetScriptModePrompt()
+	if err != nil {
+		logger.Error("NUWA TERMINAL: failed to get script mode prompt,", logger.Args("err", err.Error()))
+		return err
+	}
+	prompt = prompt + "\n" + scriptPrompt
+	// generate content
 	rsp, err := GenerateContent(ctx, prompt)
 	if err != nil {
 		logger.Error("NUWA TERMINAL: failed to generate content,", logger.Args("err", err.Error()))
@@ -395,25 +423,10 @@ func handleNuwaScript(ctx context.Context, filepath string) error {
 	}
 	fmt.Println("NUWA: " + rsp)
 
-	// 解析命令
-	cmd, err := parser.ParseCmdFromString(rsp)
-	if err != nil {
-		logger.Error("NUWA TERMINAL: failed to parse command,", logger.Args("err", err.Error()))
+	if err := parseScriptAndExecute(rsp); err != nil {
+		logger.Error("NUWA TERMINAL: failed to parse script and execute,", logger.Args("err", err.Error()))
 		return err
 	}
-
-	if cmd == "" {
-		logger.Info("NUWA TERMINAL: empty command")
-		return nil
-	}
-
-	// 执行命令
-	output, err := cmdexe.ExecCommandWithOutput(cmd)
-	if err != nil {
-		logger.Error("NUWA TERMINAL: failed to execute command,", logger.Args("err", err.Error(), "output", output))
-		return err
-	}
-	fmt.Println(output)
 
 	return nil
 }
@@ -429,6 +442,17 @@ func handleTaskMode(ctx context.Context, prompt string) error {
 	}
 	fmt.Println("NUWA: " + rsp)
 
+	if err := parseScriptAndExecute(rsp); err != nil {
+		logger.Error("NUWA TERMINAL: failed to parse script and execute,", logger.Args("err", err.Error()))
+		return err
+	}
+
+	return nil
+}
+
+func parseScriptAndExecute(rsp string) error {
+	logger := pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
+
 	filename, content, err := ParseScript(rsp)
 	if err != nil {
 		logger.Error("NUWA TERMINAL: failed to parse script,", logger.Args("err", err.Error()))
@@ -442,6 +466,7 @@ func handleTaskMode(ctx context.Context, prompt string) error {
 
 	scriptfile, err := prepareScriptFile(filename, content)
 	if err != nil {
+		logger.Error("NUWA TERMINAL: failed to prepare script file,", logger.Args("err", err.Error()))
 		return err
 	}
 
@@ -451,13 +476,12 @@ func handleTaskMode(ctx context.Context, prompt string) error {
 		return err
 	}
 
-	fmt.Println(output)
+	logger.Info("NUWA TERMINAL: script output", logger.Args("output", output))
 
 	if err := os.Remove(scriptfile); err != nil {
 		logger.Error("NUWA TERMINAL: failed to remove script file,", logger.Args("err", err.Error()))
 		return err
 	}
-
 	logger.Info("NUWA TERMINAL: script file removed")
 	return nil
 }
@@ -556,9 +580,16 @@ func executor(in string) {
 		return
 	}
 
+	ctx := context.Background()
+	if isScript, err := handleScriptMode(ctx, in); err != nil {
+		logger.Error("NUWA TERMINAL: failed to handle script mode,", logger.Args("err", err.Error()))
+		return
+	} else if isScript {
+		return
+	}
+
 	prompt := GetPromptAccordingToCurrentMode(CurrentMode, in)
 	AddSuggest(in, "")
-	ctx := context.Background()
 
 	// 根据当前模式处理输入
 	var err error
