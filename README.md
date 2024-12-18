@@ -296,7 +296,7 @@ source envs.sh
 - Execute some complicated task with script file.
 - Use agent mode to execute complex tasks and troubleshooting.
 
-### TODO
+### TODO Features
 
 - Claude LLM as backend
 - Support more language like python as task script
@@ -306,6 +306,7 @@ source envs.sh
 - Support system troubleshooting
 - Initialize a spesific language project
 - Support to execute the script write with natural language.
+- Support to remote mode to execute task and command in remote server
 
 
 ## License
