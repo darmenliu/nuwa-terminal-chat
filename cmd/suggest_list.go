@@ -1,6 +1,10 @@
 package main
 
 import (
+	"os"
+	"path/filepath"
+	"strings"
+
 	goterm "github.com/c-bata/go-prompt"
 )
 
@@ -30,6 +34,29 @@ func completer(in goterm.Document) []goterm.Suggest {
 	if in.TextBeforeCursor() == "" {
 		return []goterm.Suggest{}
 	}
+	suggest := []goterm.Suggest{}
 
+	// 检查是否是文件路径补全
+	if strings.HasPrefix(in.Text, "./") || strings.HasPrefix(in.Text, "/") {
+		dir := filepath.Dir(in.Text)
+		files, err := os.ReadDir(dir)
+		if err != nil {
+			return suggest
+		}
+
+		for _, file := range files {
+			name := file.Name()
+			fullPath := filepath.Join(dir, name)
+			if file.IsDir() {
+				name += "/"
+				fullPath += "/"
+			}
+			suggest = append(suggest, goterm.Suggest{
+				Text:        fullPath,
+				Description: name,
+			})
+		}
+		return suggest
+	}
 	return goterm.FilterHasPrefix(suggests, in.GetWordBeforeCursor(), true)
 }
