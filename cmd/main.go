@@ -46,10 +46,10 @@ const (
 	BashModePrefix  = ">"
 
 	// 快捷键常量
-	ChatModeKey  = "@" // Ctrl+2
-	CmdModeKey   = "#" // Ctrl+3
-	TaskModeKey  = "$" // Ctrl+4
-	AgentModeKey = "&" // Ctrl+7
+	ChatModeKey  = "@" // Ctrl+C
+	CmdModeKey   = "#" // Ctrl+F
+	TaskModeKey  = "$" // Ctrl+S
+	AgentModeKey = "&" // Ctrl+A
 	BashModeKey  = ">" // Ctrl+B
 )
 
