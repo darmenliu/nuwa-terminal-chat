@@ -307,6 +307,7 @@ source envs.sh
 - Initialize a spesific language project
 - Support to execute the script write with natural language.
 - Support to remote mode to execute task and command in remote server
+- Support to git operation like clone, commit, push, pull, with natural language.
 
 
 ## License
