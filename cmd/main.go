@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -11,6 +10,7 @@ import (
 	"github.com/darmenliu/nuwa-terminal-chat/pkg/agents"
 	"github.com/darmenliu/nuwa-terminal-chat/pkg/cmdexe"
 	"github.com/darmenliu/nuwa-terminal-chat/pkg/llms"
+	"github.com/darmenliu/nuwa-terminal-chat/pkg/nuwa"
 	"github.com/darmenliu/nuwa-terminal-chat/pkg/parser"
 	"github.com/darmenliu/nuwa-terminal-chat/pkg/prompts"
 
@@ -20,7 +20,6 @@ import (
 	"github.com/pterm/pterm/putils"
 	lcagents "github.com/tmc/langchaingo/agents"
 	"github.com/tmc/langchaingo/chains"
-	lcllms "github.com/tmc/langchaingo/llms"
 	"github.com/tmc/langchaingo/tools"
 )
 
@@ -100,45 +99,6 @@ func GetSysPromptAccordingMode(current string) string {
 func GetPromptAccordingToCurrentMode(current string, in string) string {
 	sysPrompt := GetSysPromptAccordingMode(current)
 	return sysPrompt + "\n" + in
-}
-
-type NuwaChat struct {
-	model        lcllms.Model
-	chatHistory  []lcllms.MessageContent
-	SystemPrompt string
-}
-
-func NewNuwaChat(ctx context.Context, systemPrompt string) (*NuwaChat, error) {
-	model, err := llms.GetLLMBackend(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get LLM backend: %w", err)
-	}
-
-	content := []lcllms.MessageContent{
-		lcllms.TextParts(lcllms.ChatMessageTypeSystem, systemPrompt),
-	}
-
-	return &NuwaChat{
-		model:        model,
-		chatHistory:  content,
-		SystemPrompt: systemPrompt,
-	}, nil
-}
-
-func (n *NuwaChat) Chat(ctx context.Context, message string) (string, error) {
-	n.chatHistory = append(n.chatHistory, lcllms.TextParts(lcllms.ChatMessageTypeHuman, message))
-
-	resp, err := n.model.GenerateContent(ctx, n.chatHistory)
-	if err != nil {
-		return "", fmt.Errorf("failed to generate content: %w", err)
-	}
-
-	choices := resp.Choices
-	if len(choices) < 1 {
-		return "", errors.New("empty response from model")
-	}
-	c1 := choices[0]
-	return c1.Content, nil
 }
 
 func FailureExit() {
@@ -228,20 +188,12 @@ func handleScriptMode(ctx context.Context, in string) (bool, error) {
 func handleChatMode(ctx context.Context, input string) error {
 	logger := pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
 	sysPrompt := GetSysPromptAccordingMode(ChatMode)
-	nuwa, err := NewNuwaChat(ctx, sysPrompt)
+	nuwa, err := nuwa.NewNuwaChat(ctx, sysPrompt)
 	if err != nil {
 		logger.Error("NUWA TERMINAL: failed to create NuwaChat,", logger.Args("err", err.Error()))
 		return err
 	}
-
-	rsp, err := nuwa.Chat(ctx, input)
-	if err != nil {
-		logger.Error("NUWA TERMINAL: failed to generate content,", logger.Args("err", err.Error()))
-		return err
-	}
-
-	fmt.Println("NUWA: " + rsp)
-	return nil
+	return nuwa.Run(input)
 }
 
 // handleCmdMode 处理命令模式
