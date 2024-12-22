@@ -14,7 +14,6 @@ import (
 	"github.com/darmenliu/nuwa-terminal-chat/pkg/prompts"
 
 	goterm "github.com/c-bata/go-prompt"
-	"github.com/google/uuid"
 	"github.com/pterm/pterm"
 	"github.com/pterm/pterm/putils"
 )
@@ -99,30 +98,6 @@ func GetPromptAccordingToCurrentMode(current string, in string) string {
 
 func FailureExit() {
 	os.Exit(1)
-}
-
-// ParseScript parses the code from the LLM response and returns the filename and content of the first source file.
-// If there are no source files found or if there is an error parsing the code, an error is returned.
-func ParseScript(response string) (filename, content string, err error) {
-	logger := pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
-	parser := parser.NewGoCodeParser()
-	sources, err := parser.ParseCode(response)
-	if err != nil {
-		logger.Error("Failed to parse code from LLM response, error:", logger.Args("err", err.Error()))
-		return "", "", err
-	}
-
-	if len(sources) == 0 {
-		logger.Error("No source files found in LLM response")
-		return "", "", fmt.Errorf("no source files found")
-	}
-
-	sources[0].FileName = uuid.New().String() + ".sh"
-	sources[0].ParseFileContent()
-
-	filename = sources[0].FileName
-	content = sources[0].FileContent
-	return filename, content, nil
 }
 
 var LivePrefixState struct {
