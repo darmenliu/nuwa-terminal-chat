@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/darmenliu/nuwa-terminal-chat/pkg/agents"
 	"github.com/darmenliu/nuwa-terminal-chat/pkg/cmdexe"
 	"github.com/darmenliu/nuwa-terminal-chat/pkg/llms"
 	"github.com/darmenliu/nuwa-terminal-chat/pkg/nuwa"
@@ -18,9 +17,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/pterm/pterm"
 	"github.com/pterm/pterm/putils"
-	lcagents "github.com/tmc/langchaingo/agents"
-	"github.com/tmc/langchaingo/chains"
-	"github.com/tmc/langchaingo/tools"
 )
 
 const (
@@ -265,30 +261,15 @@ func handleTaskMode(ctx context.Context, prompt string) error {
 // handleAgentMode execute agent according to the input
 func handleAgentMode(ctx context.Context, input string) error {
 	logger := pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
-
-	llm, err := llms.GetLLMBackend(ctx)
+	nuwa, err := nuwa.NewNuwaAgent(ctx, input)
 	if err != nil {
-		logger.Error("NUWA TERMINAL: failed to get LLM backend,", logger.Args("err", err.Error()))
+		logger.Error("NUWA TERMINAL: failed to create NuwaAgent,", logger.Args("err", err.Error()))
 		return err
 	}
-
-	agentTools := []tools.Tool{
-		&agents.ScriptExecutor{},
-	}
-
-	agent := agents.NewTroubleshootingAgent(llm, agentTools, "output", nil)
-	executor := lcagents.NewExecutor(agent)
-	answer, err := chains.Run(context.Background(), executor, input)
-	if err != nil {
-		logger.Error("NUWA TERMINAL: failed to run agent,", logger.Args("err", err.Error()))
-		return err
-	}
-
-	fmt.Println("NUWA: " + answer)
-	return nil
+	return nuwa.Run(input)
 }
 
-// handleBashMode 处理 bash mode
+// handleBashMode execute bash command
 func handleBashMode(input string) error {
 	logger := pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
 
