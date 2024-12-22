@@ -290,23 +290,15 @@ func handleNuwaScript(ctx context.Context, filepath string) error {
 	return nil
 }
 
-// handleTaskMode 处理任务模式
+// handleTaskMode execute task according to the prompt
 func handleTaskMode(ctx context.Context, prompt string) error {
 	logger := pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
-
-	rsp, err := llms.GenerateContent(ctx, prompt)
+	nuwa, err := nuwa.NewNuwaTask(ctx, prompt)
 	if err != nil {
-		logger.Error("NUWA TERMINAL: failed to generate content,", logger.Args("err", err.Error()))
+		logger.Error("NUWA TERMINAL: failed to create NuwaTask,", logger.Args("err", err.Error()))
 		return err
 	}
-	fmt.Println("NUWA: " + rsp)
-
-	if err := parseScriptAndExecute(rsp); err != nil {
-		logger.Error("NUWA TERMINAL: failed to parse script and execute,", logger.Args("err", err.Error()))
-		return err
-	}
-
-	return nil
+	return nuwa.Run(prompt)
 }
 
 func parseScriptAndExecute(rsp string) error {
