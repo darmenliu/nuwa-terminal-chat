@@ -240,54 +240,15 @@ func handleCmdMode(ctx context.Context, prompt string) error {
 	return nil
 }
 
-// handleNuwaScript 处理 .nw 脚本文件
+// handleNuwaScript execute nuwa script according to the filepath
 func handleNuwaScript(ctx context.Context, filepath string) error {
 	logger := pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
-
-	// check if the file exists and has execute permission
-	info, err := os.Stat(filepath)
+	nuwa, err := nuwa.NewNuwaScript(ctx, filepath)
 	if err != nil {
-		logger.Error("NUWA TERMINAL: failed to access script file,", logger.Args("err", err.Error()))
+		logger.Error("NUWA TERMINAL: failed to create NuwaScript,", logger.Args("err", err.Error()))
 		return err
 	}
-
-	if info.Mode()&0111 == 0 {
-		return fmt.Errorf("script file %s is not executable", filepath)
-	}
-
-	content, err := os.ReadFile(filepath)
-	if err != nil {
-		logger.Error("NUWA TERMINAL: failed to read script file,", logger.Args("err", err.Error()))
-		return err
-	}
-
-	lines := strings.Split(string(content), "\n")
-	if len(lines) == 0 || !strings.HasPrefix(lines[0], "#!/bin/nuwa") {
-		return fmt.Errorf("invalid nuwa script file: must start with #!/bin/nuwa")
-	}
-
-	scriptPrompt := strings.Join(lines[0:], "\n")
-
-	prompt, err := prompts.GetScriptModePrompt()
-	if err != nil {
-		logger.Error("NUWA TERMINAL: failed to get script mode prompt,", logger.Args("err", err.Error()))
-		return err
-	}
-	prompt = prompt + "\n" + scriptPrompt
-	// generate content
-	rsp, err := llms.GenerateContent(ctx, prompt)
-	if err != nil {
-		logger.Error("NUWA TERMINAL: failed to generate content,", logger.Args("err", err.Error()))
-		return err
-	}
-	fmt.Println("NUWA: " + rsp)
-
-	if err := parseScriptAndExecute(rsp); err != nil {
-		logger.Error("NUWA TERMINAL: failed to parse script and execute,", logger.Args("err", err.Error()))
-		return err
-	}
-
-	return nil
+	return nuwa.Run(filepath)
 }
 
 // handleTaskMode execute task according to the prompt
@@ -301,64 +262,7 @@ func handleTaskMode(ctx context.Context, prompt string) error {
 	return nuwa.Run(prompt)
 }
 
-func parseScriptAndExecute(rsp string) error {
-	logger := pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
-
-	filename, content, err := ParseScript(rsp)
-	if err != nil {
-		logger.Error("NUWA TERMINAL: failed to parse script,", logger.Args("err", err.Error()))
-		return err
-	}
-
-	if filename == "" {
-		logger.Info("NUWA TERMINAL: empty script")
-		return nil
-	}
-
-	scriptfile, err := prepareScriptFile(filename, content)
-	if err != nil {
-		logger.Error("NUWA TERMINAL: failed to prepare script file,", logger.Args("err", err.Error()))
-		return err
-	}
-
-	output, err := cmdexe.ExecScriptWithOutput(scriptfile)
-	if err != nil {
-		logger.Error("NUWA TERMINAL: failed to execute script,", logger.Args("err", err.Error()), logger.Args("output", output))
-		return err
-	}
-
-	logger.Info("NUWA TERMINAL: script output", logger.Args("output", output))
-
-	if err := os.Remove(scriptfile); err != nil {
-		logger.Error("NUWA TERMINAL: failed to remove script file,", logger.Args("err", err.Error()))
-		return err
-	}
-	logger.Info("NUWA TERMINAL: script file removed")
-	return nil
-}
-
-// prepareScriptFile 准备脚本文件
-func prepareScriptFile(filename, content string) (string, error) {
-	logger := pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
-
-	homedir := os.Getenv("HOME")
-	scriptdir := filepath.Join(homedir, Catchdir, ScriptsDir)
-	if err := os.MkdirAll(scriptdir, os.ModePerm); err != nil {
-		logger.Error("NUWA TERMINAL: failed to create script directory,", logger.Args("err", err.Error()))
-		return "", err
-	}
-
-	scriptfile := filepath.Join(scriptdir, filename)
-	if err := os.WriteFile(scriptfile, []byte(content), os.ModePerm); err != nil {
-		logger.Error("NUWA TERMINAL: failed to write script file,", logger.Args("err", err.Error()))
-		return "", err
-	}
-
-	logger.Info("NUWA TERMINAL: script file saved to " + scriptfile)
-	return scriptfile, nil
-}
-
-// handleAgentMode 处理代理模式
+// handleAgentMode execute agent according to the input
 func handleAgentMode(ctx context.Context, input string) error {
 	logger := pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
 
