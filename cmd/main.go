@@ -29,12 +29,6 @@ const (
 	Catchdir   = ".nuwa-terminal"
 	ScriptsDir = "scripts"
 
-	ChatModePrefix  = "@"
-	CmdModePrefix   = "#"
-	TaskModePrefix  = "$"
-	AgentModePrefix = "&"
-	BashModePrefix  = ">"
-
 	// 快捷键常量
 	ChatModeKey  = "@" // Ctrl+C
 	CmdModeKey   = "#" // Ctrl+F
@@ -49,7 +43,7 @@ var CurrentDir string = ""
 // Set current directory
 func SetCurrentDir(in string) {
 	CurrentDir = in
-	LivePrefixState.LivePrefix = CurrentDir + getModePrefix(CurrentMode) + " "
+	LivePrefixState.LivePrefix = CurrentDir + nuwa.GetModePrefix(CurrentMode) + " "
 	LivePrefixState.IsEnable = true
 }
 
@@ -64,7 +58,7 @@ func CheckDirChanged(in string) bool {
 // SetCurrentMode sets the current mode to the specified value.
 func SetCurrentMode(in string) {
 	CurrentMode = in
-	LivePrefixState.LivePrefix = CurrentDir + getModePrefix(CurrentMode) + " "
+	LivePrefixState.LivePrefix = CurrentDir + nuwa.GetModePrefix(CurrentMode) + " "
 	LivePrefixState.IsEnable = true
 }
 
@@ -204,7 +198,7 @@ func handleCmdMode(ctx context.Context, prompt string) error {
 	}
 
 	if CheckDirChanged(curDir) {
-		LivePrefixState.LivePrefix = CurrentDir + getModePrefix(CurrentMode) + " "
+		LivePrefixState.LivePrefix = CurrentDir + nuwa.GetModePrefix(CurrentMode) + " "
 		LivePrefixState.IsEnable = true
 	}
 
@@ -264,7 +258,7 @@ func handleBashMode(input string) error {
 	}
 
 	if CheckDirChanged(curDir) {
-		LivePrefixState.LivePrefix = CurrentDir + getModePrefix(CurrentMode) + " "
+		LivePrefixState.LivePrefix = CurrentDir + nuwa.GetModePrefix(CurrentMode) + " "
 		LivePrefixState.IsEnable = true
 	}
 
@@ -322,23 +316,6 @@ func executor(in string) {
 	}
 }
 
-func getModePrefix(mode string) string {
-	switch mode {
-	case ChatMode:
-		return ChatModePrefix
-	case CmdMode:
-		return CmdModePrefix
-	case TaskMode:
-		return TaskModePrefix
-	case AgentMode:
-		return AgentModePrefix
-	case BashMode:
-		return BashModePrefix
-	default:
-		return ChatModePrefix
-	}
-}
-
 func main() {
 	flags := ParseCmdParams()
 	PrintHelp(flags)
@@ -383,7 +360,7 @@ func main() {
 		defer fmt.Println("Bye!")
 
 		// 设置初始 LivePrefix
-		LivePrefixState.LivePrefix = currentDir + getModePrefix(CurrentMode) + " "
+		LivePrefixState.LivePrefix = currentDir + nuwa.GetModePrefix(CurrentMode) + " "
 		LivePrefixState.IsEnable = true
 
 		p := goterm.New(
