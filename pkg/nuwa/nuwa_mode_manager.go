@@ -85,11 +85,17 @@ func (n *NuwaModeManagerImpl) GetModePrefix(mode string) string {
 	return GetModePrefix(mode)
 }
 
-func (n *NuwaModeManagerImpl) CheckDirChanged(in string) bool {
-	if in == n.currentDir {
+func (n *NuwaModeManagerImpl) CheckDirChanged() bool {
+	logger := pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
+	curDir, err := os.Getwd()
+	if err != nil {
+		logger.Warn("NUWA TERMINAL: failed to get current directory path,", logger.Args("err", err.Error()))
 		return false
 	}
-	n.SetCurrentDir(in)
+	if curDir == n.currentDir {
+		return false
+	}
+	n.SetCurrentDir(curDir)
 	return true
 }
 
