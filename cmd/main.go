@@ -188,6 +188,20 @@ func executor(in string) {
 	}
 }
 
+func setCurrentWorkMode(flags *CommandFlags) {
+	workMode := nuwa.ChatMode
+	if flags.chatMode {
+		workMode = nuwa.ChatMode
+	} else if flags.cmdMode {
+		workMode = nuwa.CmdMode
+	} else if flags.taskMode {
+		workMode = nuwa.TaskMode
+	} else if flags.agentMode {
+		workMode = nuwa.AgentMode
+	}
+	modeManager.SetCurrentMode(workMode)
+}
+
 func main() {
 	flags := ParseCmdParams()
 	PrintHelp(flags)
@@ -211,15 +225,7 @@ func main() {
 		logger.Fatal("NUWA TERMINAL: failed to get current directory path,", logger.Args("err", err.Error()))
 	}
 	// Set initial mode
-	if flags.chatMode {
-		modeManager.SetCurrentMode(nuwa.ChatMode)
-	} else if flags.cmdMode {
-		modeManager.SetCurrentMode(nuwa.CmdMode)
-	} else if flags.taskMode {
-		modeManager.SetCurrentMode(nuwa.TaskMode)
-	} else if flags.agentMode {
-		modeManager.SetCurrentMode(nuwa.AgentMode)
-	}
+	setCurrentWorkMode(flags)
 
 	// If there is a query, process it directly and exit
 	if flags.query != "" {
