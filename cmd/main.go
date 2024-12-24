@@ -8,9 +8,7 @@ import (
 	"strings"
 
 	"github.com/darmenliu/nuwa-terminal-chat/pkg/cmdexe"
-	"github.com/darmenliu/nuwa-terminal-chat/pkg/llms"
 	"github.com/darmenliu/nuwa-terminal-chat/pkg/nuwa"
-	"github.com/darmenliu/nuwa-terminal-chat/pkg/parser"
 	"github.com/darmenliu/nuwa-terminal-chat/pkg/prompts"
 
 	goterm "github.com/c-bata/go-prompt"
@@ -120,33 +118,12 @@ func handleChatMode(ctx context.Context, input string) error {
 // handleCmdMode 处理命令模式
 func handleCmdMode(ctx context.Context, prompt string) error {
 	logger := pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
-
-	rsp, err := llms.GenerateContent(ctx, prompt)
+	nuwa, err := nuwa.NewNuwaCmd(ctx, prompt)
 	if err != nil {
-		logger.Error("NUWA TERMINAL: failed to generate content,", logger.Args("err", err.Error()))
+		logger.Error("NUWA TERMINAL: failed to create NuwaCmd,", logger.Args("err", err.Error()))
 		return err
 	}
-	fmt.Println("NUWA: " + rsp)
-
-	cmd, err := parser.ParseCmdFromString(rsp)
-	if err != nil {
-		logger.Error("NUWA TERMINAL: failed to parse command,", logger.Args("err", err.Error()))
-		return err
-	}
-
-	if cmd == "" {
-		logger.Info("NUWA TERMINAL: empty command")
-		return nil
-	}
-
-	output, err := cmdexe.ExecCommandWithOutput(cmd)
-	if err != nil {
-		logger.Error("NUWA TERMINAL: failed to execute command,", logger.Args("err", err.Error(), "output", output))
-		return err
-	}
-	fmt.Println(output)
-
-	return nil
+	return nuwa.Run(prompt)
 }
 
 // handleNuwaScript execute nuwa script according to the filepath
