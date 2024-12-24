@@ -9,7 +9,6 @@ import (
 
 	"github.com/darmenliu/nuwa-terminal-chat/pkg/cmdexe"
 	"github.com/darmenliu/nuwa-terminal-chat/pkg/nuwa"
-	"github.com/darmenliu/nuwa-terminal-chat/pkg/prompts"
 
 	goterm "github.com/c-bata/go-prompt"
 	"github.com/pterm/pterm"
@@ -17,54 +16,17 @@ import (
 )
 
 const (
-	ChatMode  = "chatmode"
-	CmdMode   = "cmdmode"
-	TaskMode  = "taskmode"
-	AgentMode = "agentmode"
 	Exit      = "exit"
-	BashMode  = "bashmode"
-
 	Catchdir   = ".nuwa-terminal"
 	ScriptsDir = "scripts"
-
-	// 快捷键常量
-	ChatModeKey  = "@" // Ctrl+C
-	CmdModeKey   = "#" // Ctrl+F
-	TaskModeKey  = "$" // Ctrl+S
-	AgentModeKey = "&" // Ctrl+A
-	BashModeKey  = ">" // Ctrl+B
 )
-
-var CurrentMode string = ChatMode
-var CurrentDir string = ""
 
 var modeManager nuwa.NuwaModeManager = nil
 
-// GetSysPromptAccordingMode returns the system prompt according to the current mode.
-// It takes the current mode as input and returns the corresponding prompt string.
-func GetSysPromptAccordingMode(current string) string {
-	logger := pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
-	switch current {
-	case ChatMode:
-		return prompts.GetChatModePrompt()
-	case CmdMode:
-		return prompts.GetCmdModePrompt()
-	case TaskMode:
-		prompt, err := prompts.GetTaskModePrompt()
-		if err != nil {
-			logger.Error("Failed to get task mode prompt:", logger.Args("err", err.Error()))
-			return ""
-		}
-		return prompt
-	case AgentMode:
-		return ""
-	default:
-		return ""
-	}
-}
 
-func GetPromptAccordingToCurrentMode(current string, in string) string {
-	sysPrompt := GetSysPromptAccordingMode(current)
+
+func GetPromptAccordingToCurrentMode(in string) string {
+	sysPrompt := modeManager.GetSysPrompt()
 	return sysPrompt + "\n" + in
 }
 
@@ -106,7 +68,7 @@ func handleScriptMode(ctx context.Context, in string) (bool, error) {
 // handleChatMode 处理聊天模式
 func handleChatMode(ctx context.Context, input string) error {
 	logger := pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
-	sysPrompt := GetSysPromptAccordingMode(ChatMode)
+	sysPrompt := modeManager.GetSysPrompt()
 	nuwa, err := nuwa.NewNuwaChat(ctx, sysPrompt)
 	if err != nil {
 		logger.Error("NUWA TERMINAL: failed to create NuwaChat,", logger.Args("err", err.Error()))
@@ -188,7 +150,7 @@ func executor(in string) {
 	}
 
 	// 处理模式切换
-	if (in == ChatMode) || (in == CmdMode) || (in == TaskMode) || (in == AgentMode) || (in == BashMode) {
+	if (in == nuwa.ChatMode) || (in == nuwa.CmdMode) || (in == nuwa.TaskMode) || (in == nuwa.AgentMode) || (in == nuwa.BashMode) {
 		modeManager.SwitchMode(in)
 		return
 	}
@@ -201,28 +163,28 @@ func executor(in string) {
 		return
 	}
 
-	prompt := GetPromptAccordingToCurrentMode(CurrentMode, in)
+	prompt := GetPromptAccordingToCurrentMode(in)
 	AddSuggest(in, "")
 
 	// 根据当前模式处理输入
 	var err error
-	switch CurrentMode {
-	case ChatMode:
+	switch modeManager.GetCurrentMode() {
+	case nuwa.ChatMode:
 		err = handleChatMode(ctx, in)
-	case CmdMode:
+	case nuwa.CmdMode:
 		err = handleCmdMode(ctx, prompt)
 		modeManager.CheckDirChanged()
-	case TaskMode:
+	case nuwa.TaskMode:
 		err = handleTaskMode(ctx, prompt)
-	case AgentMode:
+	case nuwa.AgentMode:
 		err = handleAgentMode(ctx, in)
-	case BashMode:
+	case nuwa.BashMode:
 		err = handleBashMode(in)
 		modeManager.CheckDirChanged()
 	}
 
 	if err != nil {
-		logger.Error("NUWA TERMINAL: Error executing command", logger.Args("mode", CurrentMode, "error", err.Error()))
+		logger.Error("NUWA TERMINAL: Error executing command", logger.Args("mode", modeManager.GetCurrentMode(), "error", err.Error()))
 	}
 }
 
@@ -250,13 +212,13 @@ func main() {
 	}
 	// Set initial mode
 	if flags.chatMode {
-		modeManager.SetCurrentMode(ChatMode)
+		modeManager.SetCurrentMode(nuwa.ChatMode)
 	} else if flags.cmdMode {
-		modeManager.SetCurrentMode(CmdMode)
+		modeManager.SetCurrentMode(nuwa.CmdMode)
 	} else if flags.taskMode {
-		modeManager.SetCurrentMode(TaskMode)
+		modeManager.SetCurrentMode(nuwa.TaskMode)
 	} else if flags.agentMode {
-		modeManager.SetCurrentMode(AgentMode)
+		modeManager.SetCurrentMode(nuwa.AgentMode)
 	}
 
 	// If there is a query, process it directly and exit
@@ -269,7 +231,7 @@ func main() {
 	if flags.interactive || (!flags.chatMode && !flags.cmdMode && !flags.taskMode && !flags.agentMode && flags.query == "") {
 		defer fmt.Println("Bye!")
 		// Set initial mode
-		modeManager.SetCurrentMode(ChatMode)
+		modeManager.SetCurrentMode(nuwa.ChatMode)
 		modeManager.SetCurrentDir(currentDir)
 
 		p := goterm.New(
@@ -279,11 +241,11 @@ func main() {
 			goterm.OptionLivePrefix(modeManager.GetLivePrefix),
 			goterm.OptionTitle("NUWA TERMINAL"),
 			goterm.OptionAddKeyBind(
-				goterm.KeyBind{Key: goterm.ControlC, Fn: func(b *goterm.Buffer) { modeManager.SwitchMode(ChatMode) }},
-				goterm.KeyBind{Key: goterm.ControlF, Fn: func(b *goterm.Buffer) { modeManager.SwitchMode(CmdMode) }},
-				goterm.KeyBind{Key: goterm.ControlS, Fn: func(b *goterm.Buffer) { modeManager.SwitchMode(TaskMode) }},
-				goterm.KeyBind{Key: goterm.ControlA, Fn: func(b *goterm.Buffer) { modeManager.SwitchMode(AgentMode) }},
-				goterm.KeyBind{Key: goterm.ControlB, Fn: func(b *goterm.Buffer) { modeManager.SwitchMode(BashMode) }},
+				goterm.KeyBind{Key: goterm.ControlC, Fn: func(b *goterm.Buffer) { modeManager.SwitchMode(nuwa.ChatMode) }},
+				goterm.KeyBind{Key: goterm.ControlF, Fn: func(b *goterm.Buffer) { modeManager.SwitchMode(nuwa.CmdMode) }},
+				goterm.KeyBind{Key: goterm.ControlS, Fn: func(b *goterm.Buffer) { modeManager.SwitchMode(nuwa.TaskMode) }},
+				goterm.KeyBind{Key: goterm.ControlA, Fn: func(b *goterm.Buffer) { modeManager.SwitchMode(nuwa.AgentMode) }},
+				goterm.KeyBind{Key: goterm.ControlB, Fn: func(b *goterm.Buffer) { modeManager.SwitchMode(nuwa.BashMode) }},
 			),
 		)
 		p.Run()
