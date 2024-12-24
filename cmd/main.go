@@ -40,27 +40,7 @@ const (
 var CurrentMode string = ChatMode
 var CurrentDir string = ""
 
-// Set current directory
-func SetCurrentDir(in string) {
-	CurrentDir = in
-	LivePrefixState.LivePrefix = CurrentDir + nuwa.GetModePrefix(CurrentMode) + " "
-	LivePrefixState.IsEnable = true
-}
-
-func CheckDirChanged(in string) bool {
-	if in == CurrentDir {
-		return false
-	}
-	SetCurrentDir(in)
-	return true
-}
-
-// SetCurrentMode sets the current mode to the specified value.
-func SetCurrentMode(in string) {
-	CurrentMode = in
-	LivePrefixState.LivePrefix = CurrentDir + nuwa.GetModePrefix(CurrentMode) + " "
-	LivePrefixState.IsEnable = true
-}
+var modeManager nuwa.NuwaModeManager = nil
 
 // GetSysPromptAccordingMode returns the system prompt according to the current mode.
 // It takes the current mode as input and returns the corresponding prompt string.
@@ -92,30 +72,6 @@ func GetPromptAccordingToCurrentMode(current string, in string) string {
 
 func FailureExit() {
 	os.Exit(1)
-}
-
-var LivePrefixState struct {
-	LivePrefix string
-	IsEnable   bool
-}
-
-func changeLivePrefix() (string, bool) {
-	return LivePrefixState.LivePrefix, LivePrefixState.IsEnable
-}
-
-// handleModeSwitch 处理模式切换
-func handleModeSwitch(mode string) {
-	logger := pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
-	curDir, err := os.Getwd()
-	if err != nil {
-		logger.Warn("NUWA TERMINAL: failed to get current directory path,", logger.Args("err", err.Error()))
-		curDir = CurrentDir
-	}
-
-	SetCurrentMode(mode)
-	SetCurrentDir(curDir)
-
-	logger.Info("NUWA TERMINAL: Mode is " + CurrentMode)
 }
 
 func handleScriptMode(ctx context.Context, in string) (bool, error) {
@@ -190,18 +146,6 @@ func handleCmdMode(ctx context.Context, prompt string) error {
 	}
 	fmt.Println(output)
 
-	// 检查当前目录是否改变
-	curDir, err := os.Getwd()
-	if err != nil {
-		logger.Warn("NUWA TERMINAL: failed to get current directory path,", logger.Args("err", err.Error()))
-		return err
-	}
-
-	if CheckDirChanged(curDir) {
-		LivePrefixState.LivePrefix = CurrentDir + nuwa.GetModePrefix(CurrentMode) + " "
-		LivePrefixState.IsEnable = true
-	}
-
 	return nil
 }
 
@@ -249,19 +193,6 @@ func handleBashMode(input string) error {
 		return err
 	}
 	fmt.Println(output)
-
-	// 检查当前目录是否改变
-	curDir, err := os.Getwd()
-	if err != nil {
-		logger.Warn("NUWA TERMINAL: failed to get current directory path,", logger.Args("err", err.Error()))
-		return err
-	}
-
-	if CheckDirChanged(curDir) {
-		LivePrefixState.LivePrefix = CurrentDir + nuwa.GetModePrefix(CurrentMode) + " "
-		LivePrefixState.IsEnable = true
-	}
-
 	return nil
 }
 
@@ -281,7 +212,7 @@ func executor(in string) {
 
 	// 处理模式切换
 	if (in == ChatMode) || (in == CmdMode) || (in == TaskMode) || (in == AgentMode) || (in == BashMode) {
-		handleModeSwitch(in)
+		modeManager.SwitchMode(in)
 		return
 	}
 
@@ -303,12 +234,14 @@ func executor(in string) {
 		err = handleChatMode(ctx, in)
 	case CmdMode:
 		err = handleCmdMode(ctx, prompt)
+		modeManager.CheckDirChanged()
 	case TaskMode:
 		err = handleTaskMode(ctx, prompt)
 	case AgentMode:
 		err = handleAgentMode(ctx, in)
 	case BashMode:
 		err = handleBashMode(in)
+		modeManager.CheckDirChanged()
 	}
 
 	if err != nil {
@@ -332,21 +265,21 @@ func main() {
 
 	logger := pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
 
+	modeManager = nuwa.NewNuwaModeManager()
 	// Get current directory path
 	currentDir, err := os.Getwd()
 	if err != nil {
 		logger.Fatal("NUWA TERMINAL: failed to get current directory path,", logger.Args("err", err.Error()))
 	}
-
 	// Set initial mode
 	if flags.chatMode {
-		SetCurrentMode(ChatMode)
+		modeManager.SetCurrentMode(ChatMode)
 	} else if flags.cmdMode {
-		SetCurrentMode(CmdMode)
+		modeManager.SetCurrentMode(CmdMode)
 	} else if flags.taskMode {
-		SetCurrentMode(TaskMode)
+		modeManager.SetCurrentMode(TaskMode)
 	} else if flags.agentMode {
-		SetCurrentMode(AgentMode)
+		modeManager.SetCurrentMode(AgentMode)
 	}
 
 	// If there is a query, process it directly and exit
@@ -358,23 +291,22 @@ func main() {
 	// If it is interactive mode or no other mode is specified, enter interactive mode
 	if flags.interactive || (!flags.chatMode && !flags.cmdMode && !flags.taskMode && !flags.agentMode && flags.query == "") {
 		defer fmt.Println("Bye!")
-
-		// 设置初始 LivePrefix
-		LivePrefixState.LivePrefix = currentDir + nuwa.GetModePrefix(CurrentMode) + " "
-		LivePrefixState.IsEnable = true
+		// Set initial mode
+		modeManager.SetCurrentMode(ChatMode)
+		modeManager.SetCurrentDir(currentDir)
 
 		p := goterm.New(
 			executor,
 			completer,
 			goterm.OptionPrefix(""),
-			goterm.OptionLivePrefix(changeLivePrefix),
+			goterm.OptionLivePrefix(modeManager.GetLivePrefix),
 			goterm.OptionTitle("NUWA TERMINAL"),
 			goterm.OptionAddKeyBind(
-				goterm.KeyBind{Key: goterm.ControlC, Fn: func(b *goterm.Buffer) { handleModeSwitch(ChatMode) }},
-				goterm.KeyBind{Key: goterm.ControlF, Fn: func(b *goterm.Buffer) { handleModeSwitch(CmdMode) }},
-				goterm.KeyBind{Key: goterm.ControlS, Fn: func(b *goterm.Buffer) { handleModeSwitch(TaskMode) }},
-				goterm.KeyBind{Key: goterm.ControlA, Fn: func(b *goterm.Buffer) { handleModeSwitch(AgentMode) }},
-				goterm.KeyBind{Key: goterm.ControlB, Fn: func(b *goterm.Buffer) { handleModeSwitch(BashMode) }},
+				goterm.KeyBind{Key: goterm.ControlC, Fn: func(b *goterm.Buffer) { modeManager.SwitchMode(ChatMode) }},
+				goterm.KeyBind{Key: goterm.ControlF, Fn: func(b *goterm.Buffer) { modeManager.SwitchMode(CmdMode) }},
+				goterm.KeyBind{Key: goterm.ControlS, Fn: func(b *goterm.Buffer) { modeManager.SwitchMode(TaskMode) }},
+				goterm.KeyBind{Key: goterm.ControlA, Fn: func(b *goterm.Buffer) { modeManager.SwitchMode(AgentMode) }},
+				goterm.KeyBind{Key: goterm.ControlB, Fn: func(b *goterm.Buffer) { modeManager.SwitchMode(BashMode) }},
 			),
 		)
 		p.Run()

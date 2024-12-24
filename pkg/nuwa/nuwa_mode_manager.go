@@ -19,8 +19,9 @@ type NuwaModeManager interface {
 	SwitchMode(mode string)
 	GetCurrentMode() string
 	SetCurrentMode(in string)
+	SetCurrentDir(in string)
 	GetModePrefix(mode string) string
-	CheckDirChanged(in string) bool
+	CheckDirChanged() bool
 	GetSysPrompt() string
 	GetLivePrefix() (string, bool)
 }
