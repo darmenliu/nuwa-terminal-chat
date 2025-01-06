@@ -12,7 +12,7 @@ const (
 	CmdMode   = "cmdmode"
 	TaskMode  = "taskmode"
 	AgentMode = "agentmode"
-	BashMode  = "bashmode"
+	BashMode  = "bash"
 )
 
 type NuwaModeManager interface {
@@ -58,7 +58,6 @@ func (n *NuwaModeManagerImpl) SwitchMode(mode string) {
 		logger.Warn("NUWA TERMINAL: failed to get current directory path,", logger.Args("err", err.Error()))
 		curDir = n.currentDir
 	}
-
 	n.SetCurrentMode(mode)
 	n.SetCurrentDir(curDir)
 
@@ -135,8 +134,6 @@ func GetModePrefix(mode string) string {
 		return TaskModePrefix
 	case AgentMode:
 		return AgentModePrefix
-	case BashMode:
-		return BashModePrefix
 	default:
 		return ChatModePrefix
 	}

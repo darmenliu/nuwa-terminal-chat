@@ -111,14 +111,13 @@ You can switch between modes in two ways:
 - `cmdmode`: Set the terminal as a command mode
 - `taskmode`: Set the terminal as a task mode
 - `agentmode`: Set the terminal as an agent mode
-- `bashmode`: Set the terminal as a traditional bash terminal mode
+- `bash`: Set the terminal as a traditional bash terminal mode
 
 2. Using keyboard shortcuts (in interactive mode):
 - `Ctrl+C`: Switch to Chat mode
 - `Ctrl+F`: Switch to Command mode
 - `Ctrl+S`: Switch to Task mode
 - `Ctrl+A`: Switch to Agent mode
-- `Ctrl+B`: Switch to Bash mode
 
 The current mode is indicated by the prompt prefix:
 - Chat mode: `path@`
@@ -149,7 +148,7 @@ The current mode is indicated by the prompt prefix:
      cmdmode   Set terminal as a command mode, use natural language to communicate
      taskmode  Set terminal as a task mode, use natural language to communicate to execute tasks
      agentmode Set terminal as an agent mode for complex tasks and troubleshooting
-     bashmode  Set terminal as a traditional bash terminal mode
+     bash  Set terminal as a traditional bash terminal mode
      exit      Exit the terminal
 # set to cmd mode
 >>> cmdmode
