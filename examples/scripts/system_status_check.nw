@@ -1,0 +1,9 @@
+#!/bin/nuwa
+
+save all below files to folder /tmp/system_status
+
+find all failed system services and save to a file system_services_failed.txt
+
+use systemctl to check every failed system service and save to a file system_services_<service_name>_status.txt
+
+use systemctl to get every failed system service logs and save to a file system_services_<service_name>_logs.txt

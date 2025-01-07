@@ -12,9 +12,8 @@ var LivePrefixState struct {
 const (
 	ChatModePrefix  = "@"
 	CmdModePrefix   = "#"
-	TaskModePrefix  = "$"
+	TaskModePrefix  = ">"
 	AgentModePrefix = "&"
-	BashModePrefix  = ">"
 
 	NuwaCatchDir   = ".nuwa-terminal"
 	NuwaScriptsDir = "scripts"

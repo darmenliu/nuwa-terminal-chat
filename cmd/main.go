@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
-	"github.com/darmenliu/nuwa-terminal-chat/pkg/cmdexe"
 	"github.com/darmenliu/nuwa-terminal-chat/pkg/nuwa"
 
 	goterm "github.com/c-bata/go-prompt"
@@ -121,18 +121,18 @@ func handleAgentMode(ctx context.Context, input string) error {
 	return nuwa.Run(input)
 }
 
-// handleBashMode execute bash command
-func handleBashMode(input string) error {
-	logger := pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
 
-	// 直接执行命令，不经过 LLM
-	output, err := cmdexe.ExecCommandWithOutput(input)
+func newBashSession() {
+	logger := pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
+	cmd := exec.Command("bash")
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	logger.Info("NUWA TERMINAL: starting new bash session")
+	err := cmd.Run()
 	if err != nil {
-		logger.Error("NUWA TERMINAL: failed to execute command,", logger.Args("err", err.Error(), "output", output))
-		return err
+		logger.Error("NUWA TERMINAL: failed to start new bash session,", logger.Args("err", err.Error()))
 	}
-	fmt.Println(output)
-	return nil
 }
 
 // executor 主执行函数
@@ -149,8 +149,13 @@ func executor(in string) {
 		os.Exit(0)
 	}
 
+	if in == nuwa.BashMode {
+		newBashSession()
+		return
+	}
+
 	// 处理模式切换
-	if (in == nuwa.ChatMode) || (in == nuwa.CmdMode) || (in == nuwa.TaskMode) || (in == nuwa.AgentMode) || (in == nuwa.BashMode) {
+	if (in == nuwa.ChatMode) || (in == nuwa.CmdMode) || (in == nuwa.TaskMode) || (in == nuwa.AgentMode) {
 		modeManager.SwitchMode(in)
 		return
 	}
@@ -178,9 +183,6 @@ func executor(in string) {
 		err = handleTaskMode(ctx, prompt)
 	case nuwa.AgentMode:
 		err = handleAgentMode(ctx, in)
-	case nuwa.BashMode:
-		err = handleBashMode(in)
-		modeManager.CheckDirChanged()
 	}
 
 	if err != nil {
@@ -251,7 +253,6 @@ func main() {
 				goterm.KeyBind{Key: goterm.ControlF, Fn: func(b *goterm.Buffer) { modeManager.SwitchMode(nuwa.CmdMode) }},
 				goterm.KeyBind{Key: goterm.ControlS, Fn: func(b *goterm.Buffer) { modeManager.SwitchMode(nuwa.TaskMode) }},
 				goterm.KeyBind{Key: goterm.ControlA, Fn: func(b *goterm.Buffer) { modeManager.SwitchMode(nuwa.AgentMode) }},
-				goterm.KeyBind{Key: goterm.ControlB, Fn: func(b *goterm.Buffer) { modeManager.SwitchMode(nuwa.BashMode) }},
 			),
 		)
 		p.Run()

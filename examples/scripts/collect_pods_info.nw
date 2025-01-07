@@ -1,0 +1,11 @@
+#!/bin/nuwa
+
+save all below files to folder /tmp/pods_info
+
+list all pods and save to a file pods_all.txt
+
+describe all pods and save to a file pods_describe.txt
+
+get logs of every pods and save to a file pods_logs_<pod_name>.txt
+
+get events of all pods and save to a file pods_events.txt
