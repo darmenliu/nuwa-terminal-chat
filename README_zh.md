@@ -61,12 +61,41 @@ NUWA: 我是NUWA,你友好的软件工程师聊天机器人。我可以帮助你
 
 /home/bob>>>
 
+```
+
 ## 命令行使用
 
 Nuwa Terminal 支持多种命令行参数来设置不同的操作模式：
 
 ```bash
-nuwa-terminal [参数] [查询]
+# 获取帮助信息
+$ ./nuwa-terminal -h
+Nuwa Terminal - Your AI-powered terminal assistant
+
+Usage:
+  nuwa-terminal [flags] [query]
+
+Flags:
+  -i    Enter interactive mode, the nuwa will be like a bash environment，you can execute commands or tasks with natural language
+  -c    Chat mode, you can ask questions to Nuwa with natural language
+  -m    Command mode, you can execute commands with natural language
+  -t    Task mode, you can create a task with natural language，then nuwa will create a script to complete the task
+  -a    Agent mode, this is a experimental feature，you can ask Nuwa to help you execute more complex tasks, but the result may not be as expected
+  -q    User's input like a question, query or instruction
+  -h    Show this help message
+
+Shortcuts (in interactive mode):
+  Ctrl+C    Switch to Chat mode
+  Ctrl+F    Switch to Command mode
+  Ctrl+S    Switch to Task mode
+  Ctrl+A    Switch to Agent mode
+  Ctrl+B    Switch to Bash mode
+
+Examples:
+  nuwa-terminal -c -q "who are you?"
+  nuwa-terminal -i
+  nuwa-terminal -m -q "list all files"
+
 ```
 
 ### 命令行参数
