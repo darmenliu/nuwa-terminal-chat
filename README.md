@@ -254,6 +254,45 @@ NUWA:  The system logs contain several errors and warnings that might indicate p
 These errors and warnings should be investigated further to determine the root cause and resolve the issues.
 ```
 
+### Execute Natural Language Script
+
+Nuwa Terminal can execute scripts written in natural language. The script should be written in the following format:
+
+```
+#!/bin/nuwa
+
+save all below files to folder /tmp/pods_info
+
+list all pods and save to a file pods_all.txt
+
+describe all pods and save to a file pods_describe.txt
+
+get logs of every pods and save to a file pods_logs_<pod_name>.txt
+
+get events of all pods and save to a file pods_events.txt
+
+```
+
+there are two method to execute the script:
+
+```bash
+
+# method 1: save the script to a file, then execute the file with below command:
+
+nuwa-terminal -m -q ./examples/scripts/collect_pods_info.nw
+
+# method 2: execute the script directly under interactive mode, you run bellow script in any work mode:
+./nuwa-terminal
+███    ██ ██    ██ ██     ██  █████      ████████ ███████ ██████  ███    ███ ██ ███    ██  █████  ██
+████   ██ ██    ██ ██     ██ ██   ██        ██    ██      ██   ██ ████  ████ ██ ████   ██ ██   ██ ██
+██ ██  ██ ██    ██ ██  █  ██ ███████        ██    █████   ██████  ██ ████ ██ ██ ██ ██  ██ ███████ ██
+██  ██ ██ ██    ██ ██ ███ ██ ██   ██        ██    ██      ██   ██ ██  ██  ██ ██ ██  ██ ██ ██   ██ ██
+██   ████  ██████   ███ ███  ██   ██        ██    ███████ ██   ██ ██      ██ ██ ██   ████ ██   ██ ███████
+
+/nuwa-terminal-chat@ ./examples/scripts/collect_pods_info.nw
+
+```
+
 ## Configration
 
 ### Use local LLM via ollama as backend

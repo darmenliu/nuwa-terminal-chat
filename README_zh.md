@@ -245,6 +245,42 @@ NUWA: 系统日志中包含几个可能表明潜在问题的错误和警告。�
 这些错误和警告应该进一步调查以确定根本原因并解决问题。
 ```
 
+### 执行自然语言脚本
+
+Nuwa Terminal 支持执行使用自然语言生成的脚本，脚本的格式如下：
+
+```
+#!/bin/nuwa
+
+save all below files to folder /tmp/pods_info
+
+list all pods and save to a file pods_all.txt
+
+describe all pods and save to a file pods_describe.txt
+
+get logs of every pods and save to a file pods_logs_<pod_name>.txt
+
+get events of all pods and save to a file pods_events.txt
+```
+
+有两种方式来执行自然语言脚本：
+
+```bash
+# 方法 1: 保存脚本, 使用如下命令执行该脚本:
+
+nuwa-terminal -m -q ./examples/scripts/collect_pods_info.nw
+
+# 方法 2: 可以在交互模式下直接执行脚本, 以下命令可以运行在任何工作模式下:
+./nuwa-terminal
+███    ██ ██    ██ ██     ██  █████      ████████ ███████ ██████  ███    ███ ██ ███    ██  █████  ██
+████   ██ ██    ██ ██     ██ ██   ██        ██    ██      ██   ██ ████  ████ ██ ████   ██ ██   ██ ██
+██ ██  ██ ██    ██ ██  █  ██ ███████        ██    █████   ██████  ██ ████ ██ ██ ██ ██  ██ ███████ ██
+██  ██ ██ ██    ██ ██ ███ ██ ██   ██        ██    ██      ██   ██ ██  ██  ██ ██ ██  ██ ██ ██   ██ ██
+██   ████  ██████   ███ ███  ██   ██        ██    ███████ ██   ██ ██      ██ ██ ██   ████ ██   ██ ███████
+
+/nuwa-terminal-chat@ ./examples/scripts/collect_pods_info.nw
+```
+
 ## 配置
 
 ### 使用本地 LLM 通过 ollama 作为后端
