@@ -360,6 +360,8 @@ source envs.sh
 - Execute commands with natural language.
 - Execute some complicated task with script file.
 - Use agent mode to execute complex tasks and troubleshooting.
+- Support to execute the script write with natural language.
+- Support to switch work mode between chat, command, task, agent, and bash.
 
 ### TODO Features
 
@@ -370,7 +372,6 @@ source envs.sh
 - Support Anylize logs and explain logs
 - Support system troubleshooting
 - Initialize a spesific language project
-- Support to execute the script write with natural language.
 - Support to remote mode to execute task and command in remote server
 - Support to git operation like clone, commit, push, pull, with natural language.
 
