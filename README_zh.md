@@ -282,6 +282,33 @@ nuwa-terminal -m -q ./examples/scripts/collect_pods_info.nw
 
 ## 配置
 
+### 使用 Deepseek 作为大模型后端
+
+``` bash
+ #edit envs.sh
+vim envs.sh
+export LLM_BACKEND=deepseek
+export LLM_MODEL_NAME=deepseek-coder
+export LLM_API_KEY="your deepseek api key"
+export LLM_TEMPERATURE=0.8
+export LLM_BASE_URL=https://api.deepseek.com
+export OLLAMA_SERVER_URL="no needed"
+```
+
+### 使用 OpenAI 作为大模型后端
+
+``` bash
+ #edit envs.sh
+vim envs.sh
+export LLM_BACKEND=gemini
+export LLM_MODEL_NAME=gemini-1.5-pro
+export LLM_API_KEY="your google api key"
+export LLM_TEMPERATURE=0.8
+export LLM_BASE_URL="no needed"
+export OLLAMA_SERVER_URL="no needed"
+
+```
+
 ### 使用本地 LLM 通过 ollama 作为后端
 
 ``` bash

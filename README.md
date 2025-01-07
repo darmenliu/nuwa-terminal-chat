@@ -294,6 +294,34 @@ nuwa-terminal -m -q ./examples/scripts/collect_pods_info.nw
 
 ## Configration
 
+### Use deepseek as backend
+
+``` bash
+ #edit envs.sh
+vim envs.sh
+export LLM_BACKEND=deepseek
+export LLM_MODEL_NAME=deepseek-coder
+export LLM_API_KEY="your deepseek api key"
+export LLM_TEMPERATURE=0.8
+export LLM_BASE_URL=https://api.deepseek.com
+export OLLAMA_SERVER_URL="no needed"
+```
+
+### Use Google Gemini as backend
+
+``` bash
+
+ #edit envs.sh
+vim envs.sh
+export LLM_BACKEND=gemini
+export LLM_MODEL_NAME=gemini-1.5-pro
+export LLM_API_KEY="your google api key"
+export LLM_TEMPERATURE=0.8
+export LLM_BASE_URL="no needed"
+export OLLAMA_SERVER_URL="no needed"
+
+```
+
 ### Use local LLM via ollama as backend
 
 ``` bash
@@ -301,8 +329,8 @@ nuwa-terminal -m -q ./examples/scripts/collect_pods_info.nw
  #edit envs.sh
 vim envs.sh
 export LLM_BACKEND=ollama
-export LLM_MODEL_NAME=llama2
-export LLM_API_KEY=apikey
+export LLM_MODEL_NAME=llama3.3:latest
+export LLM_API_KEY="not needed"
 export LLM_TEMPERATURE=0.8
 export OLLAMA_SERVER_URL=http://localhost:8000
 
