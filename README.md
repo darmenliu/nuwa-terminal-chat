@@ -122,9 +122,8 @@ You can switch between modes in two ways:
 The current mode is indicated by the prompt prefix:
 - Chat mode: `path@`
 - Command mode: `path#`
-- Task mode: `path$`
+- Task mode: `path>`
 - Agent mode: `path&`
-- Bash mode: `path>`
 
 - chatmode: set the terminal as a pure chat robot mode, it's default work mode, you can use natural language to communicate with LLM to ask question about software development under this mode.
 - cmdmode: set the terminal as a command mode, use natural language to communicate with LLM to execute commands, you can also execute command directly.
