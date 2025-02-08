@@ -8,6 +8,24 @@ nuwa-terminal-chat is a program to chat with LLM in a terminal, this tool based 
 
 ## Getting Start
 
+### Using Install Script (Recommended)
+
+```bash
+# Download and run the install script
+wget https://github.com/darmenliu/nuwa-terminal-chat/releases/latest/download/install.sh
+chmod +x install.sh
+sudo ./install.sh
+
+# Configure your API key
+vim ~/.nuwa-terminal/envs.sh
+source ~/.nuwa-terminal/envs.sh
+
+# Start nuwa-terminal
+nuwa-terminal
+```
+
+### Build and Install from Source Code
+
 ``` bash
 
 # build and install nuwa-terminal-chat
@@ -408,3 +426,4 @@ source envs.sh
 ## License
 
 This project is licensed under the Apache License.
+

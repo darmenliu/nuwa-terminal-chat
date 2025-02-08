@@ -54,7 +54,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           body_path: "RELEASE-NOTES.md"
-          files: ${{ env.BINARY_NAME }}
+          files: |
+            ${{ env.BINARY_NAME }}
+            install.sh
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

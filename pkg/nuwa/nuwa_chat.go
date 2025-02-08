@@ -2,8 +2,8 @@ package nuwa
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/darmenliu/nuwa-terminal-chat/pkg/llms"
 
@@ -39,28 +39,35 @@ func NewNuwaChat(ctx context.Context, systemPrompt string) (*NuwaChat, error) {
 func (n *NuwaChat) Chat(ctx context.Context, message string) (string, error) {
 	n.chatHistory = append(n.chatHistory, lcllms.TextParts(lcllms.ChatMessageTypeHuman, message))
 
-	resp, err := n.model.GenerateContent(ctx, n.chatHistory)
+	var fullResponse strings.Builder
+
+	// 使用流式生成
+	_, err := n.model.GenerateContent(ctx, n.chatHistory, lcllms.WithStreamingFunc(func(ctx context.Context, chunk []byte) error {
+		fmt.Printf("%s", chunk) // 实时输出到终端
+		fullResponse.Write(chunk)
+		return nil
+	}))
+
 	if err != nil {
 		return "", fmt.Errorf("failed to generate content: %w", err)
 	}
 
-	choices := resp.Choices
-	if len(choices) < 1 {
-		return "", errors.New("empty response from model")
-	}
-	c1 := choices[0]
-	return c1.Content, nil
+	// 将AI的响应添加到聊天历史
+	n.chatHistory = append(n.chatHistory, lcllms.TextParts(lcllms.ChatMessageTypeAI, fullResponse.String()))
+
+	return fullResponse.String(), nil
 }
 
 func (n *NuwaChat) Run(prompt string) error {
 	logger := pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
 
-	rsp, err := n.Chat(n.ctx, prompt)
+	fmt.Printf("NUWA: ")
+	_, err := n.Chat(n.ctx, prompt)
 	if err != nil {
 		logger.Error("NUWA TERMINAL: failed to generate content,", logger.Args("err", err.Error()))
 		return err
 	}
 
-	fmt.Println("NUWA: " + rsp)
+	fmt.Printf("\n")
 	return nil
 }

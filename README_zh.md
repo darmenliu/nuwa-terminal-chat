@@ -6,6 +6,24 @@ nuwa-terminal-chat 是一个在终端中与大语言模型(LLM)聊天的程序,�
 
 ## 开始使用
 
+### 使用安装脚本（推荐）
+
+```bash
+# 下载并运行安装脚本
+wget https://github.com/darmenliu/nuwa-terminal-chat/releases/latest/download/install.sh
+chmod +x install.sh
+sudo ./install.sh
+
+# 配置你的 API 密钥
+vim ~/.nuwa-terminal/envs.sh
+source ~/.nuwa-terminal/envs.sh
+
+# 启动 nuwa-terminal
+nuwa-terminal
+```
+
+### 通过代码编译安装
+
 ``` bash
 
 # 构建并安装 nuwa-terminal-chat
