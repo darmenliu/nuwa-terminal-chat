@@ -6,6 +6,10 @@
 
 nuwa-terminal-chat is a program to chat with LLM in a terminal, this tool based on the LLM and aim to make terminal more intelligent. this terminal can help users to use natural language to execute commands or tasks, also it can be a terminal intelligent assistant, you can ask any question about software development.
 
+## Contributing
+
+We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
+
 ## Getting Start
 
 ### Using Install Script (Recommended)
